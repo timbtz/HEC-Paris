@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run python hooks/session-start.py",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
