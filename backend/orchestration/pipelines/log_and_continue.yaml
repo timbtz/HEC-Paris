@@ -1,0 +1,7 @@
+name: log_and_continue
+version: 1
+trigger:
+  source: external_event:unknown
+nodes:
+  - id: log-only
+    tool: tools.external_payload_parser:run

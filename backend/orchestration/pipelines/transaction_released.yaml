@@ -1,0 +1,33 @@
+name: transaction_released
+version: 1
+trigger:
+  source: external_event:swan.Transaction.Released
+nodes:
+  - id: fetch-transaction
+    tool: tools.swan_query:fetch_transaction
+    cacheable: false
+  - id: find-original-entry
+    tool: tools.journal_entry_builder:find_original
+    depends_on: [fetch-transaction]
+  - id: build-reversal
+    tool: tools.journal_entry_builder:build_reversal
+    depends_on: [find-original-entry]
+  - id: gate-confidence
+    tool: tools.confidence_gate:run
+    depends_on: [build-reversal]
+  - id: post-entry
+    tool: tools.gl_poster:post
+    depends_on: [build-reversal, gate-confidence]
+    when: conditions.gating:passes_confidence
+  - id: mark-original-reversed
+    tool: tools.journal_entry_builder:mark_reversed
+    depends_on: [post-entry]
+    when: conditions.gating:posted
+  - id: assert-balance
+    tool: tools.invariant_checker:run
+    depends_on: [mark-original-reversed]
+    when: conditions.gating:posted
+  - id: decrement-envelope-reversal
+    tool: tools.budget_envelope:decrement
+    depends_on: [post-entry]
+    when: conditions.gating:posted

@@ -1,0 +1,12 @@
+routes:
+  swan.Transaction.Booked:    [transaction_booked]
+  swan.Transaction.Released:  [transaction_released]
+  swan.Transaction.Canceled:  [transaction_released]
+  swan.Transaction.Enriched:  [transaction_reclassify]
+  swan.Card.Created:          [card_lifecycle]
+  swan.Account.Updated:       [reconcile_balance]
+  document.uploaded:          [document_ingested]
+  external.crm.invoice_paid:  [external_event]
+  external.shop.order_paid:   [external_event]
+defaults:
+  unknown_event: [log_and_continue]

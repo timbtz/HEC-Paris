@@ -1,0 +1,10 @@
+name: external_event
+version: 1
+trigger:
+  source: external_event:external.*
+nodes:
+  - id: parse-payload
+    tool: tools.external_payload_parser:run
+  - id: log-and-complete
+    tool: tools.review_queue:enqueue
+    depends_on: [parse-payload]

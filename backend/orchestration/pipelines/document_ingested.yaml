@@ -1,0 +1,57 @@
+name: document_ingested
+version: 1
+trigger:
+  source: external_event:document.uploaded
+nodes:
+  - id: extract
+    agent: agents.document_extractor:run
+    runner: anthropic
+    cacheable: false
+  - id: validate
+    tool: tools.document_extractor:validate_totals
+    depends_on: [extract]
+  - id: queue-review-bad-totals
+    tool: tools.review_queue:enqueue
+    depends_on: [validate]
+    when: conditions.documents:totals_mismatch
+  - id: resolve-counterparty
+    tool: tools.counterparty_resolver:run
+    depends_on: [extract, validate]
+    when: conditions.documents:totals_ok
+    cacheable: true
+  - id: ai-counterparty-fallback
+    agent: agents.counterparty_classifier:run
+    runner: anthropic
+    depends_on: [resolve-counterparty]
+    when: conditions.counterparty:unresolved
+  - id: classify-gl-account
+    tool: tools.gl_account_classifier:run
+    depends_on: [resolve-counterparty, ai-counterparty-fallback]
+    cacheable: true
+  - id: ai-account-fallback
+    agent: agents.gl_account_classifier:run
+    runner: anthropic
+    depends_on: [classify-gl-account]
+    when: conditions.gl:unclassified
+  - id: build-accrual-entry
+    tool: tools.journal_entry_builder:build_accrual
+    depends_on: [classify-gl-account, ai-account-fallback]
+  - id: gate-confidence
+    tool: tools.confidence_gate:run
+    depends_on: [build-accrual-entry]
+  - id: post-entry
+    tool: tools.gl_poster:post
+    depends_on: [build-accrual-entry, gate-confidence]
+    when: conditions.gating:passes_confidence
+  - id: queue-review
+    tool: tools.review_queue:enqueue
+    depends_on: [build-accrual-entry, gate-confidence]
+    when: conditions.gating:needs_review
+  - id: assert-balance
+    tool: tools.invariant_checker:run
+    depends_on: [post-entry]
+    when: conditions.gating:posted
+  - id: decrement-envelope
+    tool: tools.budget_envelope:decrement
+    depends_on: [post-entry]
+    when: conditions.gating:posted

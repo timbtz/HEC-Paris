@@ -1,0 +1,51 @@
+name: transaction_booked
+version: 1
+trigger:
+  source: external_event:swan.Transaction.Booked
+nodes:
+  - id: fetch-transaction
+    tool: tools.swan_query:fetch_transaction
+    cacheable: false
+  - id: resolve-counterparty
+    tool: tools.counterparty_resolver:run
+    depends_on: [fetch-transaction]
+    cacheable: true
+  - id: ai-counterparty-fallback
+    agent: agents.counterparty_classifier:run
+    runner: anthropic
+    depends_on: [resolve-counterparty]
+    when: conditions.counterparty:unresolved
+  - id: classify-gl-account
+    tool: tools.gl_account_classifier:run
+    depends_on: [resolve-counterparty, ai-counterparty-fallback]
+    cacheable: true
+  - id: ai-account-fallback
+    agent: agents.gl_account_classifier:run
+    runner: anthropic
+    depends_on: [classify-gl-account]
+    when: conditions.gl:unclassified
+  - id: match-accrual
+    tool: tools.journal_entry_builder:match_accrual
+    depends_on: [classify-gl-account, ai-account-fallback]
+  - id: build-cash-entry
+    tool: tools.journal_entry_builder:build_cash
+    depends_on: [match-accrual]
+  - id: gate-confidence
+    tool: tools.confidence_gate:run
+    depends_on: [build-cash-entry]
+  - id: post-entry
+    tool: tools.gl_poster:post
+    depends_on: [build-cash-entry, gate-confidence]
+    when: conditions.gating:passes_confidence
+  - id: queue-review
+    tool: tools.review_queue:enqueue
+    depends_on: [build-cash-entry, gate-confidence]
+    when: conditions.gating:needs_review
+  - id: assert-balance
+    tool: tools.invariant_checker:run
+    depends_on: [post-entry]
+    when: conditions.gating:posted
+  - id: decrement-envelope
+    tool: tools.budget_envelope:decrement
+    depends_on: [post-entry]
+    when: conditions.gating:posted

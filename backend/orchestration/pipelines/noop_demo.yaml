@@ -1,0 +1,18 @@
+name: noop_demo
+version: 1
+trigger:
+  source: manual
+nodes:
+  - id: tool-a
+    tool: tools.noop:run
+    cacheable: true
+
+  - id: agent-b
+    agent: agents.noop:run
+    runner: anthropic
+    depends_on: [tool-a]
+    cacheable: false
+
+  - id: tool-c
+    tool: tools.noop:run
+    depends_on: [agent-b]
