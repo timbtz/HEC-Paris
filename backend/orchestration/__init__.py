@@ -29,16 +29,33 @@ def _register_production() -> None:
     register_tool("tools.document_extractor:validate_totals", "backend.orchestration.tools.document_extractor:validate_totals")
     register_tool("tools.external_payload_parser:run", "backend.orchestration.tools.external_payload_parser:run")
 
+    # Phase 3 reporting tools
+    register_tool("tools.period_aggregator:compute_trial_balance", "backend.orchestration.tools.period_aggregator:compute_trial_balance")
+    register_tool("tools.period_aggregator:compute_open_entries",  "backend.orchestration.tools.period_aggregator:compute_open_entries")
+    register_tool("tools.period_aggregator:summarize_period",      "backend.orchestration.tools.period_aggregator:summarize_period")
+    register_tool("tools.vat_calculator:compute_vat_return",       "backend.orchestration.tools.vat_calculator:compute_vat_return")
+    register_tool("tools.retained_earnings_builder:build_closing_entry", "backend.orchestration.tools.retained_earnings_builder:build_closing_entry")
+    register_tool("tools.report_renderer:render",                  "backend.orchestration.tools.report_renderer:render")
+
     # Agents
     register_agent("agents.counterparty_classifier:run", "backend.orchestration.agents.counterparty_classifier:run")
     register_agent("agents.gl_account_classifier:run",   "backend.orchestration.agents.gl_account_classifier_agent:run")
     register_agent("agents.document_extractor:run",      "backend.orchestration.agents.document_extractor:run")
+
+    # Phase 3 reporting agent
+    register_agent("agents.anomaly_flag:run",            "backend.orchestration.agents.anomaly_flag_agent:run")
 
     # Conditions
     register_condition("conditions.counterparty:unresolved", "backend.orchestration.conditions.counterparty:unresolved")
     register_condition("conditions.gl:unclassified",         "backend.orchestration.conditions.gl:unclassified")
     register_condition("conditions.documents:totals_ok",     "backend.orchestration.conditions.documents:totals_ok")
     register_condition("conditions.documents:totals_mismatch","backend.orchestration.conditions.documents:totals_mismatch")
+
+    # Phase 3 reporting conditions
+    register_condition("conditions.reporting:period_open",                "backend.orchestration.conditions.reporting:period_open")
+    register_condition("conditions.reporting:period_closeable",           "backend.orchestration.conditions.reporting:period_closeable")
+    register_condition("conditions.reporting:has_anomalies",              "backend.orchestration.conditions.reporting:has_anomalies")
+    register_condition("conditions.reporting:passes_report_confidence",   "backend.orchestration.conditions.reporting:passes_report_confidence")
 
 
 _register_production()

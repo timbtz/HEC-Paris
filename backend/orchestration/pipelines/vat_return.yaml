@@ -1,0 +1,31 @@
+name: vat_return
+version: 1
+trigger:
+  source: pipeline:vat_return
+nodes:
+  - id: compute-trial-balance
+    tool: tools.period_aggregator:compute_trial_balance
+  - id: compute-open-entries
+    tool: tools.period_aggregator:compute_open_entries
+    depends_on: [compute-trial-balance]
+  - id: compute-vat
+    tool: tools.vat_calculator:compute_vat_return
+    depends_on: [compute-trial-balance]
+  - id: flag-anomalies
+    agent: agents.anomaly_flag:run
+    runner: anthropic
+    depends_on: [compute-vat, compute-open-entries]
+  - id: summarize-period
+    tool: tools.period_aggregator:summarize_period
+    depends_on: [flag-anomalies]
+  - id: gate-confidence
+    tool: tools.confidence_gate:run
+    depends_on: [summarize-period]
+  - id: render-report
+    tool: tools.report_renderer:render
+    depends_on: [summarize-period, gate-confidence]
+    when: conditions.reporting:passes_report_confidence
+  - id: queue-review
+    tool: tools.review_queue:enqueue
+    depends_on: [summarize-period, gate-confidence]
+    when: conditions.gating:needs_review

@@ -7,6 +7,7 @@ pipeline and we fail loudly rather than silently routing to a default.
 from __future__ import annotations
 
 import importlib
+import os
 from functools import lru_cache
 from typing import Any, Callable
 
@@ -97,3 +98,52 @@ _REGISTRIES: dict[str, dict[str, str]] = {
     "runner": _RUNNER_REGISTRY,
     "condition": _CONDITION_REGISTRY,
 }
+
+
+def default_runner() -> str:
+    """Return the runner-registry key for the configured classifier provider.
+
+    Reads ``AGNES_LLM_PROVIDER`` at call time (not import time) so tests
+    can flip the env var with ``monkeypatch.setenv`` without re-importing.
+
+    Mapping:
+      - ``cerebras`` -> ``pydantic_ai`` (Cerebras runner; registry-name
+        misnomer kept for compat with the executor's provider mapping —
+        see plan §NOTES design decision #3).
+      - ``adk``      -> ``adk`` (no live impl yet; future ADK runner).
+      - default / unknown -> ``anthropic``.
+    """
+    provider = os.environ.get("AGNES_LLM_PROVIDER", "anthropic").lower()
+    if provider == "cerebras":
+        return "pydantic_ai"
+    if provider == "adk":
+        return "adk"
+    return "anthropic"
+
+
+def default_cerebras_model(role: str) -> str:
+    """Pick a Cerebras model id by agent role.
+
+    Three-tier free-tier-friendly defaults:
+      - ``classifier`` (counterparty + GL hot-path, <5s SLA) ->
+        ``llama3.1-8b`` ($0.10/$0.10/M, ~2,170 tps; CEREBRAS_STACK_REFERENCE
+        §3 deprecation 2026-05-27).
+      - ``anomaly`` (off-SLA structured tool call) ->
+        ``qwen-3-235b-a22b-instruct-2507`` ($0.60/$1.20/M, free-tier
+        accessible; CEREBRAS_STACK_REFERENCE §3 deprecation 2026-05-27).
+      - any other role -> the classifier default.
+
+    Both defaults are picked because they're reachable on a free-tier
+    Cerebras key — `gpt-oss-120b` and `llama3.3-70b` require Developer
+    tier. Override at runtime when you upgrade:
+      AGNES_CEREBRAS_CLASSIFIER_MODEL=gpt-oss-120b
+      AGNES_CEREBRAS_ANOMALY_MODEL=gpt-oss-120b
+    """
+    if role == "classifier":
+        return os.environ.get("AGNES_CEREBRAS_CLASSIFIER_MODEL", "llama3.1-8b")
+    if role == "anomaly":
+        return os.environ.get(
+            "AGNES_CEREBRAS_ANOMALY_MODEL",
+            "qwen-3-235b-a22b-instruct-2507",
+        )
+    return os.environ.get("AGNES_CEREBRAS_DEFAULT_MODEL", "llama3.1-8b")

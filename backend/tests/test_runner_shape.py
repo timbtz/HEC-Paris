@@ -99,14 +99,32 @@ async def test_adk_real_run_raises_not_implemented(store):
         )
 
 
-async def test_pydantic_ai_real_run_raises_not_implemented(store):
+async def test_pydantic_ai_real_run_surfaces_missing_key_as_error_result(
+    store, monkeypatch
+):
+    """The Cerebras runner surfaces a missing CEREBRAS_API_KEY as a clean
+    AgentResult with finish_reason=='error:OpenAIError', not an exception.
+
+    Surfacing the failure in the AgentResult lets the deterministic fallback
+    path take over (RealMetaPRD §7.9). Reset the singleton so this test does
+    not pick up a client built by an earlier test.
+    """
+    from backend.orchestration.runners import pydantic_ai_runner
+
+    monkeypatch.setattr(pydantic_ai_runner, "_client", None)
+    monkeypatch.delenv("CEREBRAS_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
     runner = PydanticAiRunner()
-    with pytest.raises(NotImplementedError):
-        await runner.run(
-            ctx=_ctx(store), system="s", tools=[],
-            messages=[{"role": "user", "content": "x"}],
-            model="any",
-        )
+    r = await runner.run(
+        ctx=_ctx(store), system="s", tools=[],
+        messages=[{"role": "user", "content": "x"}],
+        model="gpt-oss-120b",
+    )
+    assert isinstance(r, AgentResult)
+    assert r.output is None
+    assert r.finish_reason and r.finish_reason.startswith("error:")
+    monkeypatch.setattr(pydantic_ai_runner, "_client", None)
 
 
 def _assert_full_result(r: AgentResult) -> None:

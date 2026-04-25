@@ -117,6 +117,29 @@ async def _persist_transaction(
         )
 
 
+async def _read_local_transaction(
+    ctx: AgnesContext, tx_id: str
+) -> dict[str, Any] | None:
+    """Read a previously-persisted transaction from `accounting.swan_transactions`.
+
+    The demo seed (migration 0006) already populates 200 rows; the replay
+    script (`backend/scripts/replay_swan_seed.py`) leans on this so it can
+    drive the pipeline locally without Swan API credentials.
+    """
+    cur = await ctx.store.accounting.execute(
+        "SELECT raw FROM swan_transactions WHERE id = ?", (tx_id,)
+    )
+    row = await cur.fetchone()
+    await cur.close()
+    if row is None:
+        return None
+    raw = row[0]
+    if not raw:
+        return None
+    parsed = json.loads(raw)
+    return parsed if isinstance(parsed, dict) else None
+
+
 async def fetch_transaction(ctx: AgnesContext) -> dict[str, Any]:
     """Re-query Swan for the canonical transaction state.
 
@@ -124,6 +147,11 @@ async def fetch_transaction(ctx: AgnesContext) -> dict[str, Any]:
     field name; `id` is the local-test fallback). Persists into
     `swan_transactions` and returns the dict augmented with `__local_id`
     so downstream nodes can correlate without re-parsing the Swan payload.
+
+    Demo / replay mode: if `SWAN_CLIENT_ID` is unset, fall back to the
+    locally-persisted row in `accounting.swan_transactions` (populated by
+    the seed migration or a prior webhook). This keeps the pipeline
+    end-to-end runnable for the hackathon demo without Swan creds.
     """
     payload = ctx.trigger_payload or {}
     tx_id = payload.get("resourceId") or payload.get("id")
@@ -133,6 +161,20 @@ async def fetch_transaction(ctx: AgnesContext) -> dict[str, Any]:
         )
 
     swan_event_id = payload.get("eventId") or tx_id
+
+    # Demo / replay mode: opt in via `AGNES_SWAN_LOCAL_REPLAY=1`. Reads
+    # from the locally-persisted row (seed migration 0006) and skips the
+    # network. Production / CI never sets this, preserving the canonical
+    # re-query behavior.
+    if os.environ.get("AGNES_SWAN_LOCAL_REPLAY") == "1":
+        local = await _read_local_transaction(ctx, tx_id)
+        if local is not None:
+            out = dict(local)
+            out["__local_id"] = tx_id
+            return out
+        raise LookupError(
+            f"fetch_transaction: AGNES_SWAN_LOCAL_REPLAY=1 but no local row for {tx_id}"
+        )
 
     client = _get_client()
     tx = await client.fetch_transaction(tx_id)

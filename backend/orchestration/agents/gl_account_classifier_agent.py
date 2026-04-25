@@ -15,7 +15,7 @@ import json
 from typing import Any
 
 from ..context import AgnesContext
-from ..registries import get_runner
+from ..registries import default_cerebras_model, default_runner, get_runner
 from ..runners.base import AgentResult
 from ..store.writes import write_tx
 
@@ -26,7 +26,17 @@ async def _load_chart_codes(ctx: AgnesContext) -> list[str]:
     )
     rows = await cur.fetchall()
     await cur.close()
-    return [r[0] for r in rows]
+    codes = [r[0] for r in rows]
+    # Cerebras strict-mode caps enums at 500 entries (CEREBRAS_STACK_REFERENCE
+    # §5). HEC Paris demo CoA is ~80 codes; raise loudly if a future migration
+    # crosses the boundary so we catch it before the model rejects the call.
+    if len(codes) > 500:
+        raise RuntimeError(
+            f"chart_of_accounts has {len(codes)} entries — Cerebras strict "
+            "mode caps closed-list enums at 500. Split the schema or fall "
+            "back to a free-form pick."
+        )
+    return codes
 
 
 def _build_summary(ctx: AgnesContext) -> str:
@@ -96,7 +106,15 @@ async def run(ctx: AgnesContext) -> AgentResult:
                 },
                 "alternatives": {
                     "type": "array",
-                    "items": {"type": "object"},
+                    "items": {
+                        # Explicit shape so Cerebras strict-mode accepts it.
+                        "type": "object",
+                        "properties": {
+                            "gl_account": {"type": "string"},
+                            "confidence": {"type": "number"},
+                        },
+                        "required": ["gl_account", "confidence"],
+                    },
                 },
                 "vat_rate_bp": {
                     "type": ["integer", "null"],
@@ -123,14 +141,20 @@ async def run(ctx: AgnesContext) -> AgentResult:
         }
     ]
 
-    runner = get_runner("anthropic")
+    runner_key = default_runner()
+    model = (
+        default_cerebras_model("classifier")
+        if runner_key == "pydantic_ai"
+        else "claude-sonnet-4-6"
+    )
+    runner = get_runner(runner_key)
     result = await runner.run(
         ctx=ctx,
         system=system,
         tools=[tool],
         messages=messages,
-        model="claude-sonnet-4-6",
-        max_tokens=512,
+        model=model,
+        max_tokens=256,  # was 512 — single-enum pick + confidence is compact.
         temperature=0.0,
     )
 

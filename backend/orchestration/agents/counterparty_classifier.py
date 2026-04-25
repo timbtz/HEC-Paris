@@ -18,7 +18,7 @@ import json
 from typing import Any
 
 from ..context import AgnesContext
-from ..registries import get_runner
+from ..registries import default_cerebras_model, default_runner, get_runner
 from ..runners.base import AgentResult
 from ..store.writes import write_tx
 
@@ -43,7 +43,17 @@ _SUBMIT_TOOL: dict[str, Any] = {
             "confidence": {"type": "number"},
             "alternatives": {
                 "type": "array",
-                "items": {"type": "object"},
+                "items": {
+                    # Explicit shape so Cerebras strict-mode accepts it.
+                    # Anthropic accepts the same dict; cache_writeback at
+                    # _writeback_ai_pick reads only counterparty_id/confidence.
+                    "type": "object",
+                    "properties": {
+                        "counterparty_id": {"type": ["integer", "null"]},
+                        "confidence": {"type": "number"},
+                    },
+                    "required": ["counterparty_id", "confidence"],
+                },
             },
         },
         "required": ["counterparty_id", "confidence"],
@@ -178,14 +188,20 @@ async def run(ctx: AgnesContext) -> AgentResult:
         f"Candidates:\n{_format_candidates(candidates)}"
     )
 
-    runner = get_runner("anthropic")
+    runner_key = default_runner()
+    model = (
+        default_cerebras_model("classifier")
+        if runner_key == "pydantic_ai"
+        else "claude-sonnet-4-6"
+    )
+    runner = get_runner(runner_key)
     result = await runner.run(
         ctx=ctx,
         system=_SYSTEM_PROMPT,
         tools=[_SUBMIT_TOOL],
         messages=[{"role": "user", "content": user_content}],
-        model="claude-sonnet-4-6",
-        max_tokens=512,
+        model=model,
+        max_tokens=256,  # was 512 — closed-list pick is compact.
         temperature=0.0,
     )
 

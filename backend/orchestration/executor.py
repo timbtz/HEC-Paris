@@ -25,6 +25,7 @@ from . import audit as audit_mod
 from . import cache as cache_mod
 from . import event_bus
 from .context import AgnesContext
+from .cost import COST_TABLE_MICRO_USD
 from .dag import topological_layers
 from .registries import get_agent, get_condition, get_runner, get_tool
 from .runners.base import AgentResult
@@ -261,14 +262,15 @@ async def _dispatch_agent(node: PipelineNode, ctx: AgnesContext) -> Any:
         # we got a full AgentResult. For Phase 1 the noop_agent returns one.
         return result
 
-    provider = _provider_for_runner(node.runner or "")
+    provider = _provider_for_result(node.runner or "", result.model)
+    runner = _runner_for_provider(provider, node.runner or "")
     await audit_mod.propose_checkpoint_commit(
         audit_db=ctx.store.audit,
         audit_lock=ctx.store.audit_lock,
         run_id=ctx.run_id,
         node_id=node.id,
         result=result,
-        runner=node.runner or "",
+        runner=runner,
         employee_id=ctx.employee_id,
         provider=provider,
     )
@@ -285,9 +287,49 @@ def _provider_for_runner(runner_key: str) -> str:
     return runner_key or "unknown"
 
 
+def _provider_for_result(runner_key: str, model: str) -> str:
+    """Provider for cost lookup, resolved against the actual returned model.
+
+    Agents may swap runners at request time via ``default_runner()`` (env
+    var ``AGNES_LLM_PROVIDER``), so the YAML-declared runner can lie about
+    the real provider. The cost table is the single source of truth — if
+    the model name is registered, prefer its provider. Falls back to the
+    runner-derived provider when the model is unknown (e.g. tests with a
+    fake model string).
+    """
+    runner_provider = _provider_for_runner(runner_key)
+    if not model:
+        return runner_provider
+    for (prov, m) in COST_TABLE_MICRO_USD.keys():
+        if m == model:
+            return prov
+    return runner_provider
+
+
+def _runner_for_provider(provider: str, declared_runner: str) -> str:
+    """Inverse of ``_provider_for_runner`` — used so the audit row reflects
+    the runner that actually made the call when an agent swapped runners
+    via ``default_runner()``.
+    """
+    if provider == "anthropic":
+        return "anthropic"
+    if provider == "cerebras":
+        return "pydantic_ai"
+    if provider == "google":
+        return "adk"
+    return declared_runner or "unknown"
+
+
 # --------------------------------------------------------------------------- #
 # Event + run-status writes
 # --------------------------------------------------------------------------- #
+
+_DASHBOARD_FANOUT_EVENT_TYPES = frozenset({
+    "pipeline_started",
+    "pipeline_completed",
+    "pipeline_failed",
+})
+
 
 async def write_event(
     ctx: AgnesContext,
@@ -295,7 +337,12 @@ async def write_event(
     node_id: str | None,
     data: dict[str, Any],
 ) -> None:
-    """Dual-write: pipeline_events row + event_bus fanout."""
+    """Dual-write: pipeline_events row + event_bus fanout.
+
+    Pipeline lifecycle events (`pipeline_started/completed/failed`) are
+    additionally fanned out to the dashboard bus so the Today dashboard's
+    "recent runs" card updates without polling (backend-gap-plan §11).
+    """
     payload = json.dumps(_safe_for_json(data), separators=(",", ":"))
     elapsed = data.get("elapsed_ms") if isinstance(data, dict) else None
 
@@ -306,16 +353,19 @@ async def write_event(
             (ctx.run_id, event_type, node_id, payload, elapsed),
         )
 
-    await event_bus.publish_event(
-        ctx.run_id,
-        {
-            "run_id": ctx.run_id,
-            "event_type": event_type,
-            "node_id": node_id,
-            "data": _safe_for_json(data),
-            "ts": datetime.now(timezone.utc).isoformat(),
-        },
-    )
+    event = {
+        "run_id": ctx.run_id,
+        "event_type": event_type,
+        "node_id": node_id,
+        "data": _safe_for_json(data),
+        "ts": datetime.now(timezone.utc).isoformat(),
+    }
+    await event_bus.publish_event(ctx.run_id, event)
+    if event_type in _DASHBOARD_FANOUT_EVENT_TYPES:
+        await event_bus.publish_event_dashboard({
+            **event,
+            "pipeline_name": ctx.pipeline_name,
+        })
 
 
 async def _insert_run(

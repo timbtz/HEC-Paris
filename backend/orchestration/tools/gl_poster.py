@@ -16,6 +16,25 @@ from ..runners.base import AgentResult
 from ..store.writes import write_tx
 
 
+async def _find_closed_period(ctx: AgnesContext, entry_date: str) -> str | None:
+    """Return the period `code` if `entry_date` falls in a closed period.
+
+    None means: no period covers this date (allowed — e.g. dates outside
+    any seeded fiscal period) OR the covering period is open/closing.
+    Phase 3 hard rule: a closed period is immutable.
+    """
+    cur = await ctx.store.accounting.execute(
+        "SELECT code FROM accounting_periods "
+        "WHERE status = 'closed' "
+        "  AND start_date <= ? AND end_date >= ? "
+        "LIMIT 1",
+        (entry_date, entry_date),
+    )
+    row = await cur.fetchone()
+    await cur.close()
+    return row[0] if row is not None else None
+
+
 def _attribute_source(ctx: AgnesContext) -> str:
     """Walk `ctx.node_outputs` for any `AgentResult`-shaped output. If any
     agent contributed upstream, the trace is `'agent'`, else `'rule'`.
@@ -89,12 +108,24 @@ async def post(ctx: AgnesContext) -> dict[str, Any]:
         or (ctx.trigger_payload or {}).get("sha256")
     )
 
+    # Period-lock enforcement: refuse to post into an `accounting_periods`
+    # row whose status is 'closed'. Read-only check; uses the existing
+    # `accounting` connection without `write_tx` because no write happens.
+    closed_period = await _find_closed_period(ctx, entry_date)
+    if closed_period is not None:
+        raise RuntimeError(
+            f"period {closed_period} is closed; "
+            f"cannot post entry_date={entry_date}"
+        )
+
+    posted_at = datetime.now(timezone.utc).isoformat()
+
     async with write_tx(ctx.store.accounting, ctx.store.accounting_lock) as conn:
         cur = await conn.execute(
             "INSERT INTO journal_entries "
             "(basis, entry_date, description, source_pipeline, source_run_id, "
-            " status, accrual_link_id, reversal_of_id) "
-            "VALUES (?, ?, ?, ?, ?, 'posted', ?, ?)",
+            " status, accrual_link_id, reversal_of_id, posted_at) "
+            "VALUES (?, ?, ?, ?, ?, 'posted', ?, ?, ?)",
             (
                 basis,
                 entry_date,
@@ -103,6 +134,7 @@ async def post(ctx: AgnesContext) -> dict[str, Any]:
                 ctx.run_id,
                 accrual_link_id,
                 reversal_of_id,
+                posted_at,
             ),
         )
         entry_id = cur.lastrowid
