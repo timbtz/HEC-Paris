@@ -1,0 +1,1047 @@
+======================================================================
+Mutation has 137 top-level mutations
+======================================================================
+
+## add* (23)
+  addAccountMembership
+  addAccountMemberships
+  addExternalAccountBalance @deprecated
+  addExternalAccount
+  addFundingLimitSettingsChangeRequest
+  addOrUpdateExternalAccountBalance
+  addVirtualIbanEntry
+  addCard
+  addCardsWithGroupDelivery
+  addCards
+  addDigitalCard
+  addSingleUseVirtualCard
+  addSingleUseVirtualCards
+  addExternalIdentification
+  addReceivedInternalDirectDebitB2bMandate
+  addReceivedSepaDirectDebitB2bMandate
+  addInternalDirectDebitPaymentMandate
+  addSepaDirectDebitPaymentMandate
+  addDirectDebitFundingSource
+  addTrustedInternationalBeneficiary
+  addTrustedSepaBeneficiaries
+  addTrustedSepaBeneficiary
+  addWebhookSubscription
+
+## bind* (1)
+  bindAccountMembership
+
+## cancel* (12)
+  cancelVirtualIbanEntry
+  cancelCapitalDepositCase
+  cancelCard
+  cancelPhysicalCard
+  cancelDigitalCard
+  cancelConsent
+  cancelMerchantPaymentMethodUpdateRequest
+  cancelMerchantPayment
+  cancelMerchantProfileUpdateRequest
+  cancelTransaction
+  cancelFundingSource
+  cancelStandingOrder
+
+## create* (8)
+  createCompanyAccountHolderOnboarding
+  createIndividualAccountHolderOnboarding
+  createPublicCompanyAccountHolderOnboarding
+  createPublicIndividualAccountHolderOnboarding
+  createCapitalDepositCase
+  createMultiConsent
+  createInPersonPaymentIntent
+  createMerchantPaymentLink
+
+## delete* (2)
+  deleteSupportingDocument
+  deleteExportFile
+
+## disable* (3)
+  disableAccountMembership
+  disableMerchantPaymentMethod
+  disableMerchantProfile
+
+## enable* (1)
+  enableReceivedDirectDebitMandate
+
+## generate* (8)
+  generateTransactionSupportingDocumentUploadUrl
+  generateSupportingDocumentUploadUrl
+  generateAccountStatement
+  generateTransactionStatement
+  generateCapitalDepositDocumentUploadUrl
+  generateCreditStatement
+  generateExportDownloadLink
+  generateIdentificationDocumentUploadUrl
+
+## initiate* (6)
+  initiateCheckMerchantPayment
+  initiateSepaDirectDebitMerchantPayment
+  initiateMerchantPaymentCollection
+  initiateCreditTransfers
+  initiateFundingRequest
+  initiateInternationalCreditTransfer
+
+## other* (40)
+  allowSddVirtualIbanEntry
+  allowSdd
+  closeAccount
+  denySddVirtualIbanEntry
+  denySdd
+  finalizeAccountHolderOnboarding
+  finalizeOnboarding @deprecated
+  finalizeVerificationRenewal
+  onboardCompanyAccountHolder @deprecated
+  onboardIndividualAccountHolder @deprecated
+  openAccount
+  publicFinalizeAccountAdminChange
+  publicUpdateAccountAdminChange
+  sendAccountMembershipInviteNotification
+  activateDigitalCard
+  activatePhysicalCard
+  confirmPhysicalCardRenewal
+  printPhysicalCard
+  viewCardNumbers
+  viewCardNumbersWithConsent
+  viewPhysicalCardNumbers
+  viewPhysicalCardPin
+  exportAccountHolderData
+  exportAccountMembershipData
+  exportAccountData
+  exportCardData
+  exportOnboardingData
+  exportTransactionData
+  exportUserData
+  acceptConsent
+  completeUserCreation
+  deactivateUser
+  grantConsentWithServerSignature
+  startUserCreation
+  refund
+  returnTransaction
+  scheduleStandingOrder
+  verifyBeneficiary
+  probeWebhookEndpoint
+  replayWebhookEvent
+
+## remove* (1)
+  removeWebhookSubscription
+
+## request* (7)
+  requestSupportingDocumentCollectionReview
+  requestCreditLimitSettings
+  requestMerchantPaymentMethodsUpdate
+  requestMerchantPaymentMethods
+  requestMerchantProfileUpdate
+  requestMerchantProfile
+  requestTerminalConnectionToken
+
+## resume* (2)
+  resumeAccountMembership
+  resumePhysicalCard
+
+## suspend* (3)
+  suspendAccountMembership
+  suspendPhysicalCard
+  suspendReceivedDirectDebitMandate
+
+## update* (20)
+  updateAccountHolderRiskInfo
+  updateAccountHolder
+  updateAccountMembership
+  updateAccountSettings
+  updateAccount
+  updateCompanyAccountHolderOnboarding
+  updateCompanyOnboarding @deprecated
+  updateCompanyVerificationRenewal
+  updateIndividualAccountHolderOnboarding
+  updateIndividualOnboarding @deprecated
+  updateIndividualVerificationRenewal
+  updatePublicCompanyAccountHolderOnboarding
+  updatePublicIndividualAccountHolderOnboarding
+  updateSupportingDocument
+  updateCapitalDepositCaseCompany
+  updateCapitalDepositShareholderAmount
+  updateCard
+  updateUserConsentSettings
+  updateReceivedSepaDirectDebitB2bMandate
+  updateWebhookSubscription
+
+======================================================================
+INTERFACE Transaction
+======================================================================
+  id: ID!
+  supportingDocumentCollections(first: Int!, before: String, after: String, filters: SupportingDocumentCollectionFilterInput): SupportingDocumentCollectionConnection!
+  reference: String!
+  paymentMethodIdentifier: String!
+  side: TransactionSide!
+  type: TransactionTypeEnum!
+  amount: Amount!
+  label: String!
+  statusInfo: TransactionStatusInfo!
+  paymentId: String
+  payment: Payment
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  counterparty: String!
+  bookedBalanceAfter: Amount
+  paymentProduct: PaymentProduct!
+  account: Account
+  externalReference: String
+  executionDate: DateTime!
+  requestedExecutionAt: DateTime
+  originTransactionId: String
+  originTransaction: Transaction
+  statementCanBeGenerated: Boolean
+  projectId: ID!
+  isCancelable: Boolean!
+
+Transaction subtypes (10):
+ - CardTransaction
+ - CheckTransaction
+ - FeeTransaction
+ - InPersonCardTransaction
+ - InternalCreditTransfer
+ - InternalDirectDebitTransaction
+ - InternationalCreditTransferTransaction
+ - OnlineCardTransaction
+ - SEPACreditTransferTransaction
+ - SEPADirectDebitTransaction
+
+----------------------------------------------------------------------
+OBJECT CardTransaction
+  id: ID!
+  reference: String!
+  paymentMethodIdentifier: String!
+  side: TransactionSide!
+  type: TransactionTypeEnum!
+  amount: Amount!
+  label: String!
+  statusInfo: TransactionStatusInfo!
+  paymentId: String
+  payment: Payment
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  counterparty: String!
+  bookedBalanceAfter: Amount
+  paymentProduct: PaymentProduct!
+  terminalId: String
+  originalAmount: Amount!
+  currencyExchange: [ReportExchangeRate!]!
+  merchant: CardMerchant
+  cardDetails: CardDetails
+  authorizationType: AuthorizationType
+  account: Account
+  externalReference: String
+  executionDate: DateTime!
+  requestedExecutionAt: DateTime
+  originTransactionId: String
+  originTransaction: Transaction
+  enrichedTransactionInfo: EnrichedTransactionInfo
+  transactionTransportType: TransactionTransportType
+  statementCanBeGenerated: Boolean
+  projectId: ID!
+  reservedAmount: Amount
+  reservedAmountReleasedAt: DateTime
+  isCancelable: Boolean!
+  supportingDocumentCollections(first: Int!, before: String, after: String, filters: SupportingDocumentCollectionFilterInput): SupportingDocumentCollectionConnection!
+
+----------------------------------------------------------------------
+OBJECT CheckTransaction
+  id: ID!
+  reference: String!
+  paymentMethodIdentifier: String!
+  cmc7: String!
+  rlmcKey: String!
+  side: TransactionSide!
+  type: TransactionTypeEnum!
+  amount: Amount!
+  label: String!
+  statusInfo: TransactionStatusInfo!
+  paymentId: String
+  payment: Payment
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  counterparty: String!
+  bookedBalanceAfter: Amount
+  paymentProduct: PaymentProduct!
+  account: Account
+  externalReference: String
+  executionDate: DateTime!
+  requestedExecutionAt: DateTime
+  originTransactionId: String
+  originTransaction: Transaction
+  reservedAmount: Amount
+  reservedAmountReleasedAt: DateTime
+  returnReason: TransactionReasonCode
+  statementCanBeGenerated: Boolean
+  projectId: ID!
+  merchant: MerchantProfile
+  isCancelable: Boolean!
+  supportingDocumentCollections(first: Int!, before: String, after: String, filters: SupportingDocumentCollectionFilterInput): SupportingDocumentCollectionConnection!
+
+----------------------------------------------------------------------
+OBJECT FeeTransaction
+  id: ID!
+  reference: String!
+  paymentMethodIdentifier: String!
+  side: TransactionSide!
+  type: TransactionTypeEnum!
+  amount: Amount!
+  label: String!
+  feesType: FeesTypeEnum!
+  statusInfo: TransactionStatusInfo!
+  paymentId: String
+  payment: Payment
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  counterparty: String!
+  bookedBalanceAfter: Amount
+  paymentProduct: PaymentProduct!
+  creditor: FeeCreditor!
+  debtor: FeeDebtor!
+  account: Account
+  externalReference: String
+  executionDate: DateTime!
+  requestedExecutionAt: DateTime
+  originTransactionId: String
+  originTransaction: Transaction
+  statementCanBeGenerated: Boolean
+  projectId: ID!
+  isCancelable: Boolean!
+  supportingDocumentCollections(first: Int!, before: String, after: String, filters: SupportingDocumentCollectionFilterInput): SupportingDocumentCollectionConnection!
+
+----------------------------------------------------------------------
+OBJECT InPersonCardTransaction
+  id: ID!
+  reference: String!
+  paymentMethodIdentifier: String!
+  side: TransactionSide!
+  type: TransactionTypeEnum!
+  amount: Amount!
+  label: String!
+  statusInfo: TransactionStatusInfo!
+  paymentId: String
+  payment: Payment
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  counterparty: String!
+  bookedBalanceAfter: Amount
+  paymentProduct: PaymentProduct!
+  terminalId: String
+  originalAmount: Amount!
+  currencyExchange: [ReportExchangeRate!]!
+  merchant: CardMerchant
+  cardDetails: CardDetails
+  authorizationType: AuthorizationType
+  account: Account
+  externalReference: String
+  executionDate: DateTime!
+  requestedExecutionAt: DateTime
+  originTransactionId: String
+  originTransaction: Transaction
+  enrichedTransactionInfo: EnrichedTransactionInfo
+  transactionTransportType: TransactionTransportType
+  statementCanBeGenerated: Boolean
+  projectId: ID!
+  reservedAmount: Amount
+  reservedAmountReleasedAt: DateTime
+  isCancelable: Boolean!
+  supportingDocumentCollections(first: Int!, before: String, after: String, filters: SupportingDocumentCollectionFilterInput): SupportingDocumentCollectionConnection!
+
+----------------------------------------------------------------------
+OBJECT InternalCreditTransfer
+  id: ID!
+  reference: String!
+  paymentMethodIdentifier: String!
+  side: TransactionSide!
+  type: TransactionTypeEnum!
+  amount: Amount!
+  label: String!
+  statusInfo: TransactionStatusInfo!
+  paymentId: String
+  payment: Payment
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  counterparty: String!
+  bookedBalanceAfter: Amount
+  paymentProduct: PaymentProduct!
+  creditor: InternalCreditTransferCreditor!
+  debtor: InternalCreditTransferDebtor!
+  account: Account
+  externalReference: String
+  executionDate: DateTime!
+  requestedExecutionAt: DateTime
+  originTransactionId: String
+  originTransaction: Transaction
+  returnReason: TransactionReasonCode
+  statementCanBeGenerated: Boolean
+  projectId: ID!
+  isCancelable: Boolean!
+  supportingDocumentCollections(first: Int!, before: String, after: String, filters: SupportingDocumentCollectionFilterInput): SupportingDocumentCollectionConnection!
+
+----------------------------------------------------------------------
+OBJECT InternalDirectDebitTransaction
+  id: ID!
+  reference: String!
+  paymentMethodIdentifier: String!
+  side: TransactionSide!
+  type: TransactionTypeEnum!
+  amount: Amount!
+  label: String!
+  statusInfo: TransactionStatusInfo!
+  paymentId: String
+  payment: Payment
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  counterparty: String!
+  bookedBalanceAfter: Amount
+  paymentProduct: PaymentProduct!
+  creditor: InternalDirectDebitCreditor!
+  debtor: InternalDirectDebitDebtor!
+  account: Account
+  mandate: InternalDirectDebitMandate
+  externalReference: String
+  executionDate: DateTime!
+  requestedExecutionAt: DateTime
+  originTransactionId: String
+  originTransaction: Transaction
+  reservedAmount: Amount
+  reservedAmountReleasedAt: DateTime
+  returnReason: TransactionReasonCode
+  statementCanBeGenerated: Boolean
+  projectId: ID!
+  merchant: MerchantProfile
+  isCancelable: Boolean!
+  supportingDocumentCollections(first: Int!, before: String, after: String, filters: SupportingDocumentCollectionFilterInput): SupportingDocumentCollectionConnection!
+
+----------------------------------------------------------------------
+OBJECT InternationalCreditTransferTransaction
+  account: Account
+  amount: Amount!
+  bookedBalanceAfter: Amount
+  counterparty: String!
+  createdAt: DateTime!
+  creditor: InternationalCreditTransferCreditor!
+  debtor: InternationalCreditTransferDebtor!
+  estimatedDeliveryAt: DateTime
+  executionDate: DateTime!
+  externalReference: String
+  fees: Amount
+  id: ID!
+  instructedAmount: Amount
+  intermediaryBankFees: [Amount!]
+  label: String!
+  originTransaction: Transaction
+  originTransactionId: String
+  payment: Payment
+  paymentId: String
+  paymentMethodIdentifier: String!
+  paymentProduct: PaymentProduct!
+  currencyExchange: InternationalCreditTransferCurrencyExchange!
+  reference: String!
+  requestedExecutionAt: DateTime
+  returnReason: TransactionReasonCode
+  side: TransactionSide!
+  statusInfo: TransactionStatusInfo!
+  type: TransactionTypeEnum!
+  updatedAt: DateTime!
+  statementCanBeGenerated: Boolean
+  projectId: ID!
+  isCancelable: Boolean!
+  beneficiary: InternationalBeneficiary
+  supportingDocumentCollections(first: Int!, before: String, after: String, filters: SupportingDocumentCollectionFilterInput): SupportingDocumentCollectionConnection!
+
+----------------------------------------------------------------------
+OBJECT OnlineCardTransaction
+  id: ID!
+  reference: String!
+  paymentMethodIdentifier: String!
+  side: TransactionSide!
+  type: TransactionTypeEnum!
+  amount: Amount!
+  label: String!
+  statusInfo: TransactionStatusInfo!
+  paymentId: String
+  payment: Payment
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  counterparty: String!
+  bookedBalanceAfter: Amount
+  paymentProduct: PaymentProduct!
+  terminalId: String
+  originalAmount: Amount!
+  currencyExchange: [ReportExchangeRate!]!
+  merchant: CardMerchant
+  cardDetails: CardDetails
+  authorizationType: AuthorizationType
+  account: Account
+  externalReference: String
+  executionDate: DateTime!
+  requestedExecutionAt: DateTime
+  originTransactionId: String
+  originTransaction: Transaction
+  enrichedTransactionInfo: EnrichedTransactionInfo
+  transactionTransportType: TransactionTransportType
+  statementCanBeGenerated: Boolean
+  projectId: ID!
+  reservedAmount: Amount
+  reservedAmountReleasedAt: DateTime
+  isCancelable: Boolean!
+  supportingDocumentCollections(first: Int!, before: String, after: String, filters: SupportingDocumentCollectionFilterInput): SupportingDocumentCollectionConnection!
+
+----------------------------------------------------------------------
+OBJECT SEPACreditTransferTransaction
+  id: ID!
+  reference: String!
+  paymentMethodIdentifier: String!
+  side: TransactionSide!
+  type: TransactionTypeEnum!
+  amount: Amount!
+  categoryPurpose: CategoryPurpose
+  label: String!
+  labelType: LabelType!
+  statusInfo: TransactionStatusInfo!
+  paymentId: String
+  payment: Payment
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  counterparty: String!
+  bookedBalanceAfter: Amount
+  paymentProduct: PaymentProduct!
+  creditor: SEPACreditTransferCreditor!
+  debtor: SEPACreditTransferDebtor!
+  account: Account
+  externalReference: String
+  executionDate: DateTime!
+  requestedExecutionAt: DateTime
+  originTransactionId: String
+  originTransaction: Transaction
+  returnReason: TransactionReasonCode
+  statementCanBeGenerated: Boolean
+  projectId: ID!
+  isCancelable: Boolean!
+  beneficiaryVerificationResult: VerifyBeneficiaryResult
+  settledTransactions(first: Int!, after: String, orderBy: TransactionsOrderByInput, filters: TransactionsFiltersInput): TransactionConnection
+  beneficiary: Beneficiary
+  supportingDocumentCollections(first: Int!, before: String, after: String, filters: SupportingDocumentCollectionFilterInput): SupportingDocumentCollectionConnection!
+
+----------------------------------------------------------------------
+OBJECT SEPADirectDebitTransaction
+  id: ID!
+  reference: String!
+  paymentMethodIdentifier: String!
+  side: TransactionSide!
+  type: TransactionTypeEnum!
+  amount: Amount!
+  label: String!
+  statusInfo: TransactionStatusInfo!
+  paymentId: String
+  payment: Payment
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  counterparty: String!
+  bookedBalanceAfter: Amount
+  paymentProduct: PaymentProduct!
+  creditor: SEPADirectDebitCreditor!
+  debtor: SEPADirectDebitDebtor!
+  account: Account
+  mandate: SEPADirectDebitMandate
+  externalReference: String
+  executionDate: DateTime!
+  requestedExecutionAt: DateTime
+  originTransactionId: String
+  originTransaction: Transaction
+  reservedAmount: Amount
+  reservedAmountReleasedAt: DateTime
+  returnReason: TransactionReasonCode
+  statementCanBeGenerated: Boolean
+  projectId: ID!
+  merchant: MerchantProfile
+  isCancelable: Boolean!
+  supportingDocumentCollections(first: Int!, before: String, after: String, filters: SupportingDocumentCollectionFilterInput): SupportingDocumentCollectionConnection!
+
+----------------------------------------------------------------------
+OBJECT Account
+  id: ID!
+  number: AccountNumber!
+  name: String!
+  holder: AccountHolder!
+  cashAccountType: CashAccountType!
+  country: AccountCountry!
+  paymentLevel: PaymentLevel!
+  currency: Currency!
+  statusInfo: AccountStatusInfo!
+  partnershipStatusInfo: PartnershipStatusInfo
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  virtualIbanEntries(first: Int!, before: String, after: String, filters: VirtualIbanEntriesFilterInput): VirtualIBANEntryConnection!
+  memberships(first: Int!, before: String, after: String, filters: MembershipsFilterInput, orderBy: AccountMembershipOrderByInput): AccountMembershipConnection!
+  requiredConsentToFetchNewTransactions: Boolean!
+  language: AccountLanguage!
+  legalRepresentativeMembership: AccountMembership!
+  paymentAccountType: PaymentAccountType!
+  upgradedAt: DateTime
+  bankDetails: String
+  settings: AccountSettings!
+  BIC: BIC!
+  IBAN: IBAN
+  blockSDD: Boolean
+  legalDocuments(first: Int!, after: String, filters: LegalDocumentsFilterInput): LegalDocumentConnection
+  balances: AccountBalances
+  statements(first: Int!, after: String, filters: StatementFiltersInput, orderBy: StatementsOrderByInput): StatementConnection
+  transactions(first: Int!, after: String, orderBy: TransactionsOrderByInput, filters: TransactionsFiltersInput): TransactionConnection
+  invoices(first: Int!, after: String): InvoiceConnection
+  creditLimitSettings: CreditLimitSettings
+  receivedDirectDebitMandates(first: Int!, after: String, orderBy: AccountReceivedDirectDebitOrderByInput, filters: AccountReceivedDirectDebitMandateFiltersInput): ReceivedDirectDebitMandateConnection
+  merchantProfiles(first: Int!, after: String, orderBy: MerchantProfileOrderByInput, filters: MerchantProfileFiltersInput): MerchantProfileConnection
+  standingOrders(first: Int!, after: String, offset: Int, orderBy: AccountStandingOrderOrderByInput, filters: AccountStandingOrderFiltersInput): StandingOrderConnection!
+  fundingSources(first: Int!, after: String, offset: Int, orderBy: FundingSourceOrderByInput, filters: FundingSourceFiltersInput): FundingSourceConnection
+  trustedBeneficiaries(first: Int!, after: String, offset: Int, orderBy: TrustedBeneficiaryOrderByInput, filters: TrustedBeneficiaryFiltersInput): TrustedBeneficiaryConnection!
+
+----------------------------------------------------------------------
+OBJECT Card
+  id: ID!
+  transactions(first: Int!, after: String, orderBy: TransactionsOrderByInput, filters: TransactionsFiltersInput): TransactionConnection
+  type: CardType!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  accountMembership: AccountMembership!
+  mainCurrency: Currency!
+  cardContractExpiryDate: DateTime
+  cardDesignUrl: String!
+  statusInfo: CardStatusInfo!
+  withdrawal: Boolean!
+  international: Boolean!
+  nonMainCurrencyTransactions: Boolean!
+  eCommerce: Boolean!
+  physicalCard: PhysicalCard
+  cardMaskedNumber: String!
+  expiryDate: String
+  name: String
+  cardProduct: CardProduct!
+  issuingCountry: CCA3!
+  insuranceSubscription: CardInsuranceSubscription
+  cardPackage: CardPackageLevel
+  digitalCards(first: Int!, after: String, orderBy: DigitalCardOrderByInput, filters: DigitalCardFiltersInput): DigitalCardConnection!
+  spending: Spending
+  spendingLimits: [SpendingLimit!]
+
+----------------------------------------------------------------------
+OBJECT AccountHolder
+  id: ID!
+  verificationStatus: VerificationStatus!
+  verificationStatusInfo: AccountHolderVerificationStatusInfo!
+  info: AccountHolderInfo!
+  statusInfo: AccountHolderStatusInfo
+  residencyAddress: AddressInfo!
+  createdDate: DateTime!
+  updatedDate: DateTime!
+  accounts(first: Int!, before: String, after: String, orderBy: AccountOrderByInput): AccountConnection!
+  supportingDocumentCollections(first: Int!, before: String, after: String, filters: SupportingDocumentCollectionFilterInput): SupportingDocumentCollectionConnection!
+  fundingLimitSettingsChangeRequests(first: Int!, before: String, after: String): FundingLimitSettingsChangeRequestConnection!
+  onboarding: Onboarding
+  riskInfo: AccountHolderRiskInfo
+  externalAccounts(first: Int!, before: String, after: String): ExternalAccountConnection!
+  paymentMandates(first: Int!, after: String, orderBy: PaymentMandateOrderByInput, filters: PaymentMandateFiltersInput): PaymentMandateConnection
+  fundingLimitSettings: FundingLimitSettings
+
+----------------------------------------------------------------------
+OBJECT AccountMembership
+  id: ID!
+  email: String!
+  user: User
+  legalRepresentative: Boolean!
+  canViewAccount: Boolean!
+  canManageBeneficiaries: Boolean!
+  canInitiatePayments: Boolean!
+  canManageAccountMembership: Boolean!
+  canManageCards: Boolean!
+  statusInfo: AccountMembershipStatusInfo!
+  accountId: ID!
+  account: Account
+  spendingLimits: [SpendingLimit!]
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  version: String!
+  residencyAddress: AddressInfo
+  taxIdentificationNumber: String
+  acceptedIdentificationLevels: [IdentificationLevel]!
+  hasRequiredIdentificationLevel: Boolean
+  disabledAt: DateTime
+  language: AccountLanguage
+  accountCountry: AccountCountry!
+  accountHolderType: AccountHolderType!
+  cards(first: Int!, before: String, after: String, orderBy: CardOrderByInput, filters: CardFiltersInput): CardConnection!
+  spending: Spending
+
+----------------------------------------------------------------------
+OBJECT User
+  id: ID!
+  accountMemberships(first: Int!, before: String, after: String, filters: AccountMembershipsFilterInput): AccountMembershipConnection!
+  mobilePhoneNumber: PhoneNumber
+  firstName: String
+  lastName: String
+  birthLastName: String
+  allFirstNames: [String!]
+  fullName: String
+  birthDate: Date
+  nationalityCCA3: CCA3
+  birthCity: String
+  birthCountry: CCA3
+  authenticators: [Authenticator!]
+  identificationLevels: IdentificationLevels
+  preferredNotificationChannel: PreferredNotificationChannel
+  status: UserStatus
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  preferredLastName: String
+  joinedAt: DateTime!
+  emailAddresses: [String!]!
+  verifiedEmails: [String!]!
+  identifications(first: Int!, after: String, filters: IdentificationFiltersInput, orderBy: IdentificationsOrderByInput): IdentificationConnection
+
+[type Merchant not found]
+
+----------------------------------------------------------------------
+OBJECT EnrichedTransactionInfo
+  enrichedMerchantName: String
+  logoUrl: String
+  category: MerchantCategory
+  subcategory: MerchantSubCategory
+  country: CCA3
+  city: String
+  address: String
+  longitude: String
+  latitude: String
+  postalCode: String
+  isSubscription: Boolean
+  carbonFootprint: String
+  contactEmail: String
+  contactPhone: String
+  contactWebsite: String
+
+----------------------------------------------------------------------
+OBJECT VirtualIBANEntry
+  id: ID!
+  IBAN: IBAN!
+  BIC: BIC!
+  label: String
+  status: IBANStatus!
+  blockSDD: Boolean!
+  bankDetails: String
+
+----------------------------------------------------------------------
+OBJECT SupportingDocumentCollection
+  id: String!
+  statusInfo: SupportingDocumentCollectionStatusInfo!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  supportingDocuments: [SupportingDocument!]!
+  requiredSupportingDocumentPurposes: [SupportingDocumentPurpose!]!
+  accountHolder: SupportingDocumentAccountHolder!
+  onboarding: SupportingDocumentOnboarding!
+  projectInfo: ProjectInfo!
+  supportingDocumentCollectionUrl: String!
+  type: SupportingDocumentCollectionType!
+  transaction: SupportingDocumentTransaction!
+  verificationRenewalId: String
+  relatedInfo: SupportingDocumentCollectionRelatedInfo!
+
+----------------------------------------------------------------------
+OBJECT WebhookSubscription
+  id: ID!
+  label: String!
+  endpoint: String!
+  secret: String
+  eventTypes: [String!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  statusInfo: WebhookSubscriptionStatusInfo!
+  kpi: WebhookSubscriptionKpi
+  webhookEventLogs(first: Int!, after: String, filters: NestedWebhookEventLogFiltersInput): WebhookEventLogsConnection
+
+----------------------------------------------------------------------
+OBJECT WebhookEventLog
+  id: ID!
+  createdAt: DateTime!
+  eventId: ID!
+  eventDate: DateTime!
+  eventType: String!
+  resourceId: ID!
+  duration: Int!
+  requestPayload: String!
+  responsePayload: String
+  statusCode: Int
+  statusText: StatusText
+  webhookSubscription: WebhookSubscription
+  retryCount: Int
+  webhookSubscriptionLabel: String
+  webhookSubscriptionEndpoint: String
+
+----------------------------------------------------------------------
+INTERFACE PaymentMandate
+  id: ID!
+  transactions(first: Int!, after: String, filters: TransactionsFiltersInput): TransactionConnection
+  name: String
+  accountHolder: AccountHolder!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  executedAt: DateTime
+  expiredAt: Date
+  statusInfo: PaymentMandateStatusInfo!
+
+----------------------------------------------------------------------
+OBJECT StandingOrder
+  id: ID!
+  payments(first: Int!, after: String, offset: Int, orderBy: PaymentOrderByInput, filters: PaymentFiltersInput): PaymentConnection!
+  transactions(first: Int!, after: String, offset: Int, orderBy: TransactionsOrderByInput, filters: TransactionsFiltersInput): TransactionConnection
+  reference: String
+  label: String
+  amount: Amount
+  targetAvailableBalance: Amount
+  period: StandingOrderPeriod!
+  firstExecutionDate: DateTime
+  lastExecutionDate: DateTime
+  sepaBeneficiary: SEPABeneficiary!
+  statusInfo: StandingOrderStatusInfo!
+  createdAt: Date!
+  updatedAt: Date!
+  account: Account!
+  createdBy: User!
+  nextExecutionDate: Date
+  creditTransferMode: CreditTransferMode
+
+----------------------------------------------------------------------
+INTERFACE TrustedBeneficiary
+  id: ID!
+  transactions(first: Int!, after: String, filters: TransactionsFiltersInput): TransactionConnection
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  name: String!
+  label: String!
+  statusInfo: TrustedBeneficiaryStatusInfo!
+  type: BeneficiaryType!
+
+----------------------------------------------------------------------
+OBJECT MerchantProfile
+  id: ID!
+  supportingDocumentCollections(first: Int!, before: String, after: String, filters: SupportingDocumentCollectionFilterInput): SupportingDocumentCollectionConnection!
+  accentColor: String
+  accountId: ID!
+  createdAt: DateTime!
+  customerRegion: MerchantProfileCustomerRegion
+  expectedAverageBasket: Amount!
+  expectedMonthlyPaymentVolume: Amount!
+  expectedMonthlyMerchantProcessingVolume: ExpectedMonthlyMerchantProcessingVolume!
+  invoiceExampleUrl: String
+  merchantLogoUrl: String
+  merchantName: String!
+  merchantPaymentLinks(first: Int!, after: String, orderBy: MerchantPaymentLinkOrderByInput, filters: MerchantPaymentLinkFiltersInput): MerchantPaymentLinkConnection
+  merchantPaymentMethods: [MerchantPaymentMethod!]
+  merchantPayments(first: Int!, after: String, orderBy: MerchantPaymentOrderByInput, filters: MerchantPaymentFiltersInput): MerchantPaymentConnection
+  merchantWebsiteUrl: String
+  paymentFrequency: MerchantProfilePaymentFrequency
+  productType: ProductType!
+  requestedMerchantProfileUpdates: [RequestMerchantProfileUpdate!]
+  requestMerchantProfileUpdate: RequestMerchantProfileUpdate
+  socialNetworkUrl: String
+  statusInfo: MerchantProfileStatusInfo!
+  supportWebsiteUrl: String
+  termsAndConditionsUrl: String
+  updatedAt: DateTime!
+  additionalInformation: [AdditionalInformation!]!
+
+----------------------------------------------------------------------
+OBJECT MerchantPaymentLink
+  id: String!
+  projectId: ID!
+  url: String!
+  statusInfo: MerchantPaymentLinkStatusInfo!
+  merchantProfile: MerchantProfile!
+  amount: Amount!
+  redirectUrl: String
+  cancelRedirectUrl: String
+  sequence: PaymentMandateSequence!
+  billingAddress: Address
+  requestedExecutionAt: DateTime
+  externalReference: String
+  reference: String
+  language: String
+  label: String
+  customer: Customer
+  paymentMethods: [MerchantPaymentMethod!]!
+  createdAt: DateTime!
+
+----------------------------------------------------------------------
+OBJECT Amount
+  currency: Currency!
+  value: AmountValue!
+
+----------------------------------------------------------------------
+INTERFACE TransactionStatusInfo
+  id: ID!
+  status: TransactionStatus!
+
+[type CardSpendingLimit not found]
+
+[type StatusInfo not found]
+
+[type InternalConsent not found]
+
+----------------------------------------------------------------------
+OBJECT Consent
+  id: ID!
+  requireSCA: Boolean!
+  status: ConsentStatus!
+  createdAt: DateTime!
+  updatedAt: DateTime
+  startedAt: DateTime
+  expiredAt: DateTime
+  purpose: ConsentPurpose!
+  consentUrl: String!
+  redirectUrl: String!
+  userId: String!
+  user: User
+  challenge: String
+  acceptedAt: DateTime
+  refusedAt: DateTime
+  canceledAt: DateTime
+
+ENUM TransactionStatus: ['Booked', 'Deferred', 'Rejected', 'Pending', 'Canceled', 'Upcoming', 'Released', 'Settled']
+
+ENUM AccountStatus: ['Opened', 'Suspended', 'Closing', 'Closed']
+
+ENUM AccountHolderStatus: ['Enabled', 'Suspended', 'Canceled']
+
+ENUM CardStatus: ['ConsentPending', 'Processing', 'Enabled', 'Canceled', 'Canceling']
+
+ENUM OnboardingStatus: ['Finalized', 'Invalid', 'Valid']
+
+ENUM PaymentStatus: ['ConsentPending', 'Initiated', 'Rejected']
+
+ENUM WebhookSubscriptionStatus: ['Enabled', 'Disabled', 'Broken']
+
+ENUM TransactionTypeEnum: ['InternalCreditTransferOut', 'InternalCreditTransferOutReturn', 'InternalCreditTransferOutRecall', 'InternalCreditTransferIn', 'InternalCreditTransferInReturn', 'InternalCreditTransferInRecall', 'SepaCreditTransferOut', 'SepaInstantCreditTransferOut', 'SepaInstantCreditTransferIn', 'SepaCreditTransferOutReturn', 'SepaInstantCreditTransferOutRecall', 'SepaInstantCreditTransferInRecall', 'SepaCreditTransferOutRecall', 'SepaCreditTransferIn', 'SepaCreditTransferInReturn', 'SepaCreditTransferInRecall', 'FeesOut', 'FeesIn', 'SepaDirectDebitIn', 'SepaDirectDebitInReturn', 'SepaDirectDebitInReversal', 'SepaDirectDebitOut', 'SepaDirectDebitOutReturn', 'SepaDirectDebitOutReversal', 'CardOutAuthorization', 'CardOutDebit', 'CardOutDebitReversal', 'CardOutCredit', 'CardOutCreditReversal', 'InternalDirectDebitIn', 'InternalDirectDebitInReturn', 'InternalDirectDebitOut', 'InternalDirectDebitOutReturn', 'CheckIn', 'CheckInReturn', 'InternationalCreditTransferIn', 'InternationalCreditTransferOut', 'InternationalCreditTransferInReturn', 'InternationalCreditTransferOutReturn', 'CardInCredit', 'CardInChargeback', 'CardInChargebackReversal']
+
+======================================================================
+KEY MUTATIONS (signatures + input fields)
+======================================================================
+
+[mutation initiateSepaCreditTransfers not found]
+
+initiateInternationalCreditTransfer(input: InitiateInternationalCreditTransferInput!): InitiateInternationalCreditTransferResponsePayload
+  INPUT InitiateInternationalCreditTransferInput:
+    accountId: ID
+    accountNumber: AccountNumber
+    targetAmount: AmountInput!
+    internationalBeneficiary: InternationalBeneficiaryInput
+    trustedBeneficiaryId: ID
+    internationalCreditTransferDetails: [InternationalCreditTransferDetailsInput!]!
+    consentRedirectUrl: String!
+    externalReference: String
+    language: InternationalCreditTransferDisplayLanguage
+
+[mutation initiateInternalDirectDebit not found]
+
+addVirtualIbanEntry(input: AddVirtualIbanInput): AddVirtualIbanEntryPayload
+  INPUT AddVirtualIbanInput:
+    accountId: ID!
+
+cancelVirtualIbanEntry(input: CancelVirtualIbanEntryInput!): CancelVirtualIbanEntryPayload!
+  INPUT CancelVirtualIbanEntryInput:
+    virtualIbanEntryId: ID!
+
+addCard(input: AddCardInput!): AddCardPayload!
+  INPUT AddCardInput:
+    accountMembershipId: ID!
+    cardContractExpiryDate: DateTime
+    withdrawal: Boolean!
+    international: Boolean!
+    nonMainCurrencyTransactions: Boolean!
+    eCommerce: Boolean!
+    consentRedirectUrl: String!
+    name: String
+    viewCardNumber: Boolean
+    cardProductId: ID
+    spendingLimit: SpendingLimitInput
+
+addCards(input: AddCardsInput!): AddCardsPayload!
+  INPUT AddCardsInput:
+    cards: [CardConfigInput!]!
+    consentRedirectUrl: String!
+    cardProductId: ID
+
+printPhysicalCard(input: PrintPhysicalCardInput!): PrintPhysicalCardPayload!
+  INPUT PrintPhysicalCardInput:
+    cardId: ID!
+    address: CompleteAddressInput!
+    choosePin: Boolean
+    consentRedirectUrl: String!
+    physicalCardCustomOptions: PhysicalCardCustomOptionsForPrintInput
+
+activatePhysicalCard(input: ActivatePhysicalCardInput!): ActivatePhysicalCardPayload!
+  INPUT ActivatePhysicalCardInput:
+    identifier: String!
+    consentRedirectUrl: String!
+
+[mutation createWebhookSubscription not found]
+
+updateWebhookSubscription(input: UpdateWebhookSubscriptionInput!): WebhookSubscriptionPayload!
+  INPUT UpdateWebhookSubscriptionInput:
+    id: ID!
+    label: String!
+    endpoint: String!
+    secret: String
+    eventTypes: [ID!]!
+    status: WebhookSubscriptionCreationStatus!
+
+[mutation deleteWebhookSubscription not found]
+
+[mutation addStandingOrder not found]
+
+cancelStandingOrder(input: CancelStandingOrderInput!): CancelStandingOrderPayload!
+  INPUT CancelStandingOrderInput:
+    standingOrderId: String!
+
+[mutation addAccountHolder not found]
+
+onboardCompanyAccountHolder(input: OnboardCompanyAccountHolderInput): OnboardCompanyAccountHolderPayload!
+  INPUT OnboardCompanyAccountHolderInput:
+    accountName: String
+    name: String
+    registrationNumber: String
+    companyType: CompanyType
+    businessActivity: BusinessActivity
+    businessActivityDescription: String
+    accountCountry: AccountCountry
+    monthlyPaymentVolume: MonthlyPaymentVolume
+    individualUltimateBeneficialOwners: [IndividualUltimateBeneficialOwnerInput!]
+    representatives: [RepresentativeInput!]
+    residencyAddress: ResidencyAddressInput
+    email: String
+    language: String
+    isRegistered: Boolean
+    oAuthRedirectParameters: OAuthRedirectParametersInput
+    vatNumber: String
+    taxIdentificationNumber: String
+    tradeName: String
+    legalRepresentativePersonalAddress: AddressInformationInput
+    typeOfRepresentation: TypeOfRepresentation
+    acquisitionChannel: AcquisitionChannel
+
+[mutation rejectTransaction not found]
+
+[mutation releaseTransaction not found]
+
+[mutation addTrustedBeneficiary not found]
+
+[mutation simulateAuthorization not found]
+
+[mutation simulateInboundSepaCreditTransfer not found]
+
+[mutation simulateIncomingSepaCreditTransfer not found]
+
+=== sandbox simulate* mutations ===
