@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 import aiosqlite
 
 from .cost import micro_usd
+from .gamification import auto_credit_for_decision
 from .runners.base import AgentResult
 from .store.writes import write_tx
 
@@ -31,22 +32,51 @@ async def propose_checkpoint_commit(
     employee_id: int | None,
     provider: str,
     source: str = "agent",
+    wiki_references: list[tuple[int, int]] | None = None,
 ) -> int:
     """Write one agent_decisions + one agent_costs row atomically.
 
     Returns the new `agent_decisions.id` (used as `decision_id` in
     `agent_costs`).
+
+    Phase 4.A (PRD-AutonomousCFO §7.3): `wiki_references` is the list of
+    `(wiki_page_id, wiki_revision_id)` pairs the agent cited. We store
+    only the FIRST pair in the new `agent_decisions.wiki_page_id` /
+    `wiki_revision_id` columns; a multi-citation join table is deferred
+    (PRD §7.3 deferred research item #1). When the kwarg is omitted we
+    fall back to `result.wiki_references` so callers don't have to plumb
+    the same data twice.
     """
     cost = micro_usd(result.usage, provider, result.model)
     completed_at = datetime.now(timezone.utc).isoformat()
+
+    refs = wiki_references
+    if refs is None:
+        refs = list(getattr(result, "wiki_references", None) or [])
+    first_page_id: int | None = None
+    first_revision_id: int | None = None
+    if refs:
+        first = refs[0]
+        if isinstance(first, dict):
+            # Defensive — accept rich-dict citations too.
+            first_page_id = (
+                int(first["page_id"]) if first.get("page_id") is not None else None
+            )
+            first_revision_id = (
+                int(first["revision_id"]) if first.get("revision_id") is not None else None
+            )
+        elif isinstance(first, (tuple, list)) and len(first) >= 2:
+            first_page_id = int(first[0]) if first[0] is not None else None
+            first_revision_id = int(first[1]) if first[1] is not None else None
 
     async with write_tx(audit_db, audit_lock) as conn:
         cur = await conn.execute(
             "INSERT INTO agent_decisions ("
             "  run_id_logical, node_id, source, runner, model, response_id,"
             "  prompt_hash, alternatives_json, confidence,"
-            "  latency_ms, finish_reason, temperature, seed, completed_at"
-            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "  latency_ms, finish_reason, temperature, seed, completed_at,"
+            "  wiki_page_id, wiki_revision_id"
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 run_id, node_id, source, runner, result.model, result.response_id,
                 result.prompt_hash,
@@ -55,6 +85,7 @@ async def propose_checkpoint_commit(
                 result.latency_ms, result.finish_reason,
                 result.temperature, result.seed,
                 completed_at,
+                first_page_id, first_revision_id,
             ),
         )
         decision_id = cur.lastrowid
@@ -72,5 +103,13 @@ async def propose_checkpoint_commit(
                 result.usage.cache_read_tokens, result.usage.cache_write_tokens,
                 result.usage.reasoning_tokens, cost,
             ),
+        )
+        # Phase 4.B: gamification auto-credit. One approved task_completion
+        # row per agent_decisions row, idempotent on agent_decision_id.
+        await auto_credit_for_decision(
+            conn,
+            employee_id=employee_id,
+            agent_decision_id=int(decision_id),
+            runner=runner,
         )
         return decision_id

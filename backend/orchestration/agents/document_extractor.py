@@ -15,6 +15,7 @@ from typing import Any
 from ..context import AgnesContext
 from ..registries import get_runner
 from ..runners.base import AgentResult
+from ..tools import wiki_reader as wiki_reader_tool
 
 
 _SYSTEM_PROMPT = (
@@ -92,6 +93,38 @@ async def run(ctx: AgnesContext) -> AgentResult:
     data = await asyncio.to_thread(Path(blob_path).read_bytes)
     b64 = base64.b64encode(data).decode("ascii")
 
+    # Phase 4.A — Living Rule Wiki injection. Tags reflect document
+    # extraction policy; document_kind lets the CFO file kind-specific
+    # extraction rules (e.g. "expense_report" vs. "supplier_invoice").
+    metadata = ctx.metadata if isinstance(ctx.metadata, dict) else {}
+    jurisdiction = metadata.get("jurisdiction")
+    payload = ctx.trigger_payload if isinstance(ctx.trigger_payload, dict) else {}
+    document_kind = payload.get("document_kind") or metadata.get("document_kind")
+    tags = ["document_extraction", "ocr"]
+    if document_kind:
+        tags.append(str(document_kind))
+    wiki_payload = await wiki_reader_tool.fetch(
+        ctx,
+        tags=tags,
+        jurisdiction=jurisdiction,
+    )
+    wiki_pages = wiki_payload.get("pages") or []
+    wiki_references: list[tuple[int, int]] = [
+        (int(p["page_id"]), int(p["revision_id"])) for p in wiki_pages
+    ]
+    if wiki_pages:
+        policy_blocks = "\n\n".join(
+            f"### {p['title']} ({p['path']}, rev {p['revision_number']})\n\n{p['body_md']}"
+            for p in wiki_pages
+        )
+        system = (
+            f"{_SYSTEM_PROMPT}\n\n"
+            "## Policy reference (Living Rule Wiki)\n\n"
+            f"{policy_blocks}"
+        )
+    else:
+        system = _SYSTEM_PROMPT
+
     messages = [
         {
             "role": "user",
@@ -115,12 +148,13 @@ async def run(ctx: AgnesContext) -> AgentResult:
     runner = get_runner("anthropic")
     result = await runner.run(
         ctx=ctx,
-        system=_SYSTEM_PROMPT,
+        system=system,
         tools=[_SUBMIT_TOOL],
         messages=messages,
         model="claude-sonnet-4-6",
         max_tokens=2000,
         temperature=0.0,
         deadline_s=15.0,
+        wiki_context=wiki_references,
     )
     return result

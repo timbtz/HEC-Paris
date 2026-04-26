@@ -100,7 +100,7 @@ async def test_trial_balance_empty_returns_zero_totals(client):
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert body["currency"] == "EUR"
-    assert body["basis"] == "accrual"
+    assert body["basis"] == "cash"
     # Even with empty ledger we list every CoA row.
     assert isinstance(body["lines"], list)
     assert body["totals"]["total_debit_cents"] == 0
@@ -141,7 +141,7 @@ async def test_trial_balance_basis_filter(store, client):
 
 async def test_balance_sheet_provisional_flag(store, client):
     await _seed_basic_ledger(store)
-    resp = await client.get("/reports/balance_sheet?as_of=2026-04-30")
+    resp = await client.get("/reports/balance_sheet?as_of=2026-04-30&basis=accrual")
     assert resp.status_code == 200
     body = resp.json()
     # Has revenue / expense activity → provisional retained earnings.

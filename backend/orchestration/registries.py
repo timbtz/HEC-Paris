@@ -14,10 +14,14 @@ from typing import Any, Callable
 
 _TOOL_REGISTRY: dict[str, str] = {
     "tools.noop:run": "backend.orchestration.tools.noop:run",
+    "tools.wiki_reader:run": "backend.orchestration.tools.wiki_reader:run",
+    "tools.wiki_search:run": "backend.orchestration.tools.wiki_search:run",
+    "tools.wiki_writer:run": "backend.orchestration.tools.wiki_writer:run",
 }
 
 _AGENT_REGISTRY: dict[str, str] = {
     "agents.noop:run": "backend.orchestration.agents.noop_agent:run",
+    "agents.wiki_post_mortem:run": "backend.orchestration.agents.wiki_post_mortem_agent:run",
 }
 
 _RUNNER_REGISTRY: dict[str, str] = {

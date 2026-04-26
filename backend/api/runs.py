@@ -29,6 +29,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
 from ..orchestration import event_bus
+from ..orchestration.dag import topological_layers
 from ..orchestration.executor import execute_pipeline
 from ..orchestration.store.writes import write_tx
 from ..orchestration.yaml_loader import load as load_pipeline
@@ -59,6 +60,24 @@ def _rows_to_dicts(rows: list[Any]) -> list[dict[str, Any]]:
 # POST /pipelines/run/{name}
 # --------------------------------------------------------------------------- #
 
+# Closing pipelines all consume `trigger_payload.period_code` via
+# `tools/period_aggregator.py`. The frontend's "Run period close" buttons
+# fire with an empty payload, so default the code to the most-recent
+# non-closed period before kicking off the executor.
+_PERIOD_CODE_DEFAULT_PIPELINES = {"period_close", "vat_return", "year_end_close"}
+
+
+async def _default_open_period_code(store: Any) -> str | None:
+    cur = await store.accounting.execute(
+        "SELECT code FROM accounting_periods "
+        "WHERE status != 'closed' "
+        "ORDER BY start_date DESC LIMIT 1"
+    )
+    row = await cur.fetchone()
+    await cur.close()
+    return row["code"] if row is not None else None
+
+
 @router.post("/pipelines/run/{name}")
 async def trigger_pipeline(name: str, request: Request) -> dict[str, Any]:
     body: dict[str, Any] = {}
@@ -79,6 +98,19 @@ async def trigger_pipeline(name: str, request: Request) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail="employee_id must be int|null")
 
     store = request.app.state.store
+
+    if name in _PERIOD_CODE_DEFAULT_PIPELINES and not trigger_payload.get("period_code"):
+        default_code = await _default_open_period_code(store)
+        if default_code is None:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "no open period available; pass trigger_payload.period_code "
+                    "explicitly"
+                ),
+            )
+        trigger_payload = {**trigger_payload, "period_code": default_code}
+
     run_id = await execute_pipeline(
         name,
         trigger_source="manual",
@@ -385,7 +417,14 @@ async def list_journal_entries(
 
 
 def _ms_between(started: str | None, completed: str | None) -> int | None:
-    """Compute elapsed_ms between two ISO timestamps. Tolerant of ' '/'T'."""
+    """Compute elapsed_ms between two ISO timestamps.
+
+    Tolerates: ' '/'T' separator, optional 'Z' or '+00:00' suffix, and
+    mixed naive/aware pairs (the SQLite default `CURRENT_TIMESTAMP` writes
+    a naive `2026-04-26 05:25:02`, while our Python-side `.isoformat()`
+    emits a `+00:00`-tagged value — the original code crashed on that
+    pairing).
+    """
     if not started or not completed:
         return None
     try:
@@ -393,6 +432,12 @@ def _ms_between(started: str | None, completed: str | None) -> int | None:
         c = datetime.fromisoformat(completed.replace("Z", "+00:00"))
     except ValueError:
         return None
+    if (s.tzinfo is None) ^ (c.tzinfo is None):
+        # Treat both as UTC if only one carries an offset.
+        if s.tzinfo is None:
+            s = s.replace(tzinfo=timezone.utc)
+        if c.tzinfo is None:
+            c = c.replace(tzinfo=timezone.utc)
     return int((c - s).total_seconds() * 1000)
 
 
@@ -572,6 +617,15 @@ async def list_pipelines(request: Request) -> dict[str, Any]:
     return {"items": items}
 
 
+@router.get("/pipelines/{name}/dag")
+async def get_pipeline_dag(name: str, request: Request) -> dict[str, Any]:
+    """Alias for `/pipelines/{name}` — kept so the DAG-viewer has a stable
+    URL contract per PRD-AutonomousCFO §7.4 even if the catalog endpoint
+    later grows extra fields.
+    """
+    return await get_pipeline(name, request)
+
+
 @router.get("/pipelines/{name}")
 async def get_pipeline(name: str, request: Request) -> dict[str, Any]:
     path = _PIPELINES_DIR / f"{name}.yaml"
@@ -582,8 +636,9 @@ async def get_pipeline(name: str, request: Request) -> dict[str, Any]:
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"invalid pipeline yaml: {exc}") from exc
     event_names = _routing_event_pipelines()
-    nodes = [
-        {
+
+    def _node_dict(n: Any, layer_index: int) -> dict[str, Any]:
+        return {
             "id": n.id,
             "kind": "tool" if n.is_tool else "agent",
             "ref": n.tool if n.is_tool else n.agent,
@@ -591,15 +646,24 @@ async def get_pipeline(name: str, request: Request) -> dict[str, Any]:
             "depends_on": list(n.depends_on),
             "when": n.when,
             "cacheable": n.cacheable,
+            "layer_index": layer_index,
         }
-        for n in pipeline.nodes
+
+    layers_raw = topological_layers(pipeline.nodes)
+    layers = [
+        [_node_dict(n, layer_idx) for n in layer]
+        for layer_idx, layer in enumerate(layers_raw)
     ]
+    # Flat node list (legacy callers) — keep the layer index inline so older
+    # consumers can still group if they want.
+    nodes = [n for layer in layers for n in layer]
     return {
         "name": pipeline.name,
         "version": pipeline.version,
         "kind": "event" if pipeline.name in event_names else "manual",
         "trigger": _trigger_string(pipeline.trigger),
         "nodes": nodes,
+        "layers": layers,
     }
 
 

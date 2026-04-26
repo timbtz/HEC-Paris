@@ -5,9 +5,12 @@ wrapper); RealMetaPRD §6.4 line 504 (`asyncio.gather(..., return_exceptions=
 True)` semantics); REF-SSE-STREAMING-FASTAPI.md:217-249 (write_event
 dual-write pattern).
 
-Event invariant: a clean N-node run emits 2N+2 pipeline_events rows
-(`pipeline_started` + 2 per node + `pipeline_completed`). RealMetaPRD §11
-line 1554.
+Event invariant: a clean run emits `pipeline_started` + 2 events per node
+(`node_started` + `node_completed` | `node_skipped`) + 1 extra
+`agent.decision` event per agent node + `pipeline_completed`.
+For N total nodes with A agent nodes that all reach the audit step the
+row count is `2N + A + 2` (RealMetaPRD §11 line 1554, extended in
+PRD-AutonomousCFO §7.4 for the DAG-viewer per-decision event).
 """
 from __future__ import annotations
 
@@ -25,7 +28,7 @@ from . import audit as audit_mod
 from . import cache as cache_mod
 from . import event_bus
 from .context import AgnesContext
-from .cost import COST_TABLE_MICRO_USD
+from .cost import COST_TABLE_MICRO_USD, micro_usd
 from .dag import topological_layers
 from .registries import get_agent, get_condition, get_runner, get_tool
 from .runners.base import AgentResult
@@ -190,7 +193,7 @@ async def _run_node(node: PipelineNode, ctx: AgnesContext) -> _NodeOutcome:
                     elapsed_ms=int((time.monotonic() - start) * 1000),
                 )
 
-        await write_event(ctx, "node_started", node.id, {})
+        await write_event(ctx, "node_started", node.id, _node_started_payload(node))
 
         canonical_input = _canonical_node_input(node, ctx)
         cache_key_value: str | None = None
@@ -264,7 +267,7 @@ async def _dispatch_agent(node: PipelineNode, ctx: AgnesContext) -> Any:
 
     provider = _provider_for_result(node.runner or "", result.model)
     runner = _runner_for_provider(provider, node.runner or "")
-    await audit_mod.propose_checkpoint_commit(
+    decision_id = await audit_mod.propose_checkpoint_commit(
         audit_db=ctx.store.audit,
         audit_lock=ctx.store.audit_lock,
         run_id=ctx.run_id,
@@ -273,6 +276,39 @@ async def _dispatch_agent(node: PipelineNode, ctx: AgnesContext) -> Any:
         runner=runner,
         employee_id=ctx.employee_id,
         provider=provider,
+    )
+
+    # PRD-AutonomousCFO §7.4: emit a per-decision event right after the audit
+    # row is committed. The DAG-viewer SSE consumer paints the agent node's
+    # cost / prompt-hash / wiki citations from this event.
+    try:
+        cost_value = micro_usd(result.usage, provider, result.model)
+    except KeyError:
+        # Unknown (provider, model) pair — surface zero rather than crash the
+        # event emit. The audit row already records the underlying tokens.
+        cost_value = 0
+    citations = await _resolved_wiki_citations(ctx, result)
+    await write_event(
+        ctx,
+        "agent.decision",
+        node.id,
+        {
+            "decision_id": decision_id,
+            "model": result.model,
+            "runner": runner,
+            "provider": provider,
+            "prompt_hash": result.prompt_hash,
+            "finish_reason": result.finish_reason,
+            "confidence": result.confidence,
+            "latency_ms": result.latency_ms,
+            "input_tokens": result.usage.input_tokens,
+            "output_tokens": result.usage.output_tokens,
+            "cache_read_tokens": result.usage.cache_read_tokens,
+            "cache_write_tokens": result.usage.cache_write_tokens,
+            "reasoning_tokens": result.usage.reasoning_tokens,
+            "cost_micro_usd": cost_value,
+            "wiki_citations": citations,
+        },
     )
     return result.output
 
@@ -413,6 +449,115 @@ def _canonical_node_input(node: PipelineNode, ctx: AgnesContext) -> dict[str, An
         "trigger_payload": ctx.trigger_payload,
         "deps": {d: ctx.node_outputs.get(d) for d in node.depends_on},
     }
+
+
+def _node_kind(node: PipelineNode) -> str:
+    """Project a YAML node onto the {tool|agent|condition} kind set the
+    DAG-viewer expects (PRD-AutonomousCFO §7.4).
+
+    YAML enforces exactly one of `tool:` / `agent:`. A `when:` predicate on a
+    tool/agent node does NOT change the kind — the predicate is reflected
+    separately in the payload's `when` field.
+    """
+    if node.is_agent:
+        return "agent"
+    if node.is_tool:
+        return "tool"
+    return "condition"
+
+
+def _node_started_payload(node: PipelineNode) -> dict[str, Any]:
+    """Per-node metadata published on `node_started`.
+
+    PRD-AutonomousCFO §7.4: the DAG-viewer needs `kind`, `ref`, `depends_on`,
+    `when`, `cacheable` to paint a node before any output arrives. The
+    backend already stamps these onto the run via `/pipelines/{name}` on
+    initial fetch; broadcasting them again on `node_started` keeps the SSE
+    stream self-describing for replay tools.
+    """
+    return {
+        "kind": _node_kind(node),
+        "ref": node.tool if node.is_tool else node.agent,
+        "depends_on": list(node.depends_on),
+        "when": node.when,
+        "cacheable": node.cacheable,
+    }
+
+
+def _wiki_citations_for_result(result: AgentResult) -> list[dict[str, Any]]:
+    """Project `result.wiki_references` (Phase 4.A wiki agent) onto the
+    DAG-viewer's `wiki_citations` shape WITHOUT a DB round-trip.
+
+    Used as the soft-fallback when `_resolved_wiki_citations` can't reach
+    the orchestration DB or the resolver query raises. Pads `path` /
+    `title` / `revision_number` with None so the frontend always sees a
+    stable shape.
+    """
+    refs = getattr(result, "wiki_references", None)
+    if not refs:
+        return []
+    out: list[dict[str, Any]] = []
+    for r in refs:
+        if isinstance(r, dict):
+            out.append({
+                "page_id": r.get("page_id"),
+                "revision_id": r.get("revision_id"),
+                "revision_number": r.get("revision_number"),
+                "path": r.get("path"),
+                "title": r.get("title"),
+            })
+        elif isinstance(r, (tuple, list)) and len(r) >= 2:
+            out.append({
+                "page_id": r[0],
+                "revision_id": r[1],
+                "revision_number": None,
+                "path": None,
+                "title": None,
+            })
+    return out
+
+
+async def _resolved_wiki_citations(
+    ctx: AgnesContext, result: AgentResult,
+) -> list[dict[str, Any]]:
+    """Resolve `result.wiki_references` against the orchestration DB so
+    the `agent.decision` event ships with `path` + `title` + `revision_number`.
+
+    Soft-fails to `_wiki_citations_for_result` (raw-shape, missing
+    metadata) on any DB error. An empty/absent `wiki_references` short-
+    circuits to `[]` — the empty path is the dominant case for non-wiki
+    agents and must stay cheap. PRD-AutonomousCFO §7.4.
+    """
+    refs = getattr(result, "wiki_references", None)
+    if not refs:
+        return []
+
+    # Normalize tuple-or-list of pairs for the resolver. The resolver
+    # itself defends against malformed entries, but pre-filtering keeps
+    # the DB round-trip predictable.
+    pairs: list[tuple[int, int]] = []
+    for r in refs:
+        if isinstance(r, dict):
+            pid = r.get("page_id")
+            rid = r.get("revision_id")
+            if pid is not None and rid is not None:
+                pairs.append((int(pid), int(rid)))
+        elif isinstance(r, (tuple, list)) and len(r) >= 2 and r[0] is not None and r[1] is not None:
+            pairs.append((int(r[0]), int(r[1])))
+    if not pairs:
+        return _wiki_citations_for_result(result)
+
+    try:
+        # Local import avoids loading wiki module at executor import time
+        # for runs that never hit a wiki agent.
+        from .wiki.loader import resolve_references
+        return await resolve_references(ctx.store.orchestration, pairs)
+    except BaseException as exc:  # noqa: BLE001
+        logger.warning(
+            "executor.wiki_citations: resolver failed (%s); falling back to raw shape",
+            exc,
+        )
+        return _wiki_citations_for_result(result)
 
 
 def _safe_for_json(obj: Any) -> Any:

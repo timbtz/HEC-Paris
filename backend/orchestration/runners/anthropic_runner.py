@@ -13,7 +13,7 @@ from __future__ import annotations
 import asyncio
 import os
 import time
-from typing import Any, TYPE_CHECKING
+from typing import Any, Iterable, TYPE_CHECKING
 
 from .base import AgentResult, TokenUsage
 from ..prompt_hash import prompt_hash
@@ -125,8 +125,12 @@ class AnthropicRunner:
         max_tokens: int = 1024,
         deadline_s: float = 4.5,
         seed: int | None = None,
+        wiki_context: Iterable[tuple[int, int]] | None = None,
     ) -> AgentResult:
-        ph = prompt_hash(model, system, tools, messages)
+        wiki_refs: list[tuple[int, int]] = (
+            [(int(p), int(r)) for p, r in wiki_context] if wiki_context else []
+        )
+        ph = prompt_hash(model, system, tools, messages, wiki_context=wiki_refs)
         start = time.monotonic()
         client = _get_client()
 
@@ -178,6 +182,7 @@ class AnthropicRunner:
                 temperature=temperature,
                 seed=seed,
                 raw={"exception": repr(exc)},
+                wiki_references=list(wiki_refs),
             )
 
         elapsed_ms = int((time.monotonic() - start) * 1000)
@@ -196,4 +201,5 @@ class AnthropicRunner:
             finish_reason=getattr(msg, "stop_reason", None),
             temperature=temperature,
             seed=seed,
+            wiki_references=list(wiki_refs),
         )

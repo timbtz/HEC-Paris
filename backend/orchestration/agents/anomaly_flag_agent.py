@@ -19,6 +19,7 @@ from typing import Any
 from ..context import AgnesContext
 from ..registries import default_cerebras_model, default_runner, get_runner
 from ..runners.base import AgentResult
+from ..tools import wiki_reader as wiki_reader_tool
 
 
 _ANOMALY_KINDS = (
@@ -94,12 +95,46 @@ async def run(ctx: AgnesContext) -> AgentResult:
     }
 
     summary = _build_summary(ctx)
-    system = (
+    base_system = (
         "You are an audit assistant reviewing one fiscal period's accounting "
         "data. Flag concrete anomalies you can defend from the supplied "
         "totals — do not speculate. Return zero anomalies if the period "
         "looks clean."
     )
+
+    # Phase 4.A — Living Rule Wiki injection. The pipeline_name tag lets a
+    # CFO write a vat_return-specific anomaly rule without leaking it into
+    # the unrelated period_close anomaly pass.
+    metadata = ctx.metadata if isinstance(ctx.metadata, dict) else {}
+    jurisdiction = metadata.get("jurisdiction")
+    tags = ["anomaly_detection", ctx.pipeline_name]
+    period_id = metadata.get("period_id") or (
+        ctx.trigger_payload.get("period_id") if isinstance(ctx.trigger_payload, dict) else None
+    )
+    if period_id:
+        tags.append(str(period_id))
+    wiki_payload = await wiki_reader_tool.fetch(
+        ctx,
+        tags=tags,
+        jurisdiction=jurisdiction,
+    )
+    wiki_pages = wiki_payload.get("pages") or []
+    wiki_references: list[tuple[int, int]] = [
+        (int(p["page_id"]), int(p["revision_id"])) for p in wiki_pages
+    ]
+    if wiki_pages:
+        policy_blocks = "\n\n".join(
+            f"### {p['title']} ({p['path']}, rev {p['revision_number']})\n\n{p['body_md']}"
+            for p in wiki_pages
+        )
+        system = (
+            f"{base_system}\n\n"
+            "## Policy reference (Living Rule Wiki)\n\n"
+            f"{policy_blocks}"
+        )
+    else:
+        system = base_system
+
     messages = [
         {
             "role": "user",
@@ -126,4 +161,5 @@ async def run(ctx: AgnesContext) -> AgentResult:
         model=model,
         max_tokens=800,  # was 1024 — anomaly schema is compact.
         temperature=0.0,
+        wiki_context=wiki_references,
     )

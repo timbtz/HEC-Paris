@@ -17,12 +17,34 @@ from ..context import AgnesContext
 async def _resolve_period(ctx: AgnesContext) -> dict[str, Any]:
     """Look up the period row from `accounting_periods`.
 
-    Reads `period_code` from `ctx.trigger_payload`. Raises `ValueError`
-    if the payload is missing the field or the period code is unknown.
+    Reads `period_code` from `ctx.trigger_payload`. If the payload does
+    not supply a `period_code`, falls back to the most-recent
+    `status='open'` row in `accounting_periods` (latest `end_date` wins
+    when several are open). Raises `ValueError` if the payload was
+    missing the field AND no open period exists, or if an explicitly
+    supplied `period_code` is unknown.
     """
     period_code = (ctx.trigger_payload or {}).get("period_code")
     if not period_code:
-        raise ValueError("period_aggregator: trigger_payload missing 'period_code'")
+        cur = await ctx.store.accounting.execute(
+            "SELECT code, start_date, end_date, status "
+            "FROM accounting_periods "
+            "WHERE status = 'open' "
+            "ORDER BY end_date DESC LIMIT 1"
+        )
+        row = await cur.fetchone()
+        await cur.close()
+        if row is None:
+            raise ValueError(
+                "period_aggregator: no open accounting_periods and "
+                "trigger_payload didn't supply 'period_code'"
+            )
+        return {
+            "code": row[0],
+            "start_date": row[1],
+            "end_date": row[2],
+            "status": row[3],
+        }
     cur = await ctx.store.accounting.execute(
         "SELECT code, start_date, end_date, status "
         "FROM accounting_periods WHERE code = ?",
@@ -40,8 +62,26 @@ async def _resolve_period(ctx: AgnesContext) -> dict[str, Any]:
     }
 
 
+def _basis_for(ctx: AgnesContext) -> str:
+    """Closing basis for this run.
+
+    Reads `basis` from `ctx.trigger_payload` (whitelist `accrual`/`cash`).
+    Defaults to `accrual` — that's the production close. Demo seeds post
+    `cash`-basis Swan transactions, so the demo trigger sends
+    `basis: 'cash'` to make the trial balance non-empty.
+    """
+    raw = (ctx.trigger_payload or {}).get("basis")
+    basis = (raw or "accrual").lower()
+    if basis not in ("accrual", "cash"):
+        raise ValueError(f"period_aggregator: invalid basis {basis!r}")
+    return basis
+
+
 async def compute_trial_balance(ctx: AgnesContext) -> dict[str, Any]:
-    """Trial balance for the closing period (accrual basis).
+    """Trial balance for the closing period.
+
+    Defaults to `accrual` basis; trigger_payload may override with
+    `basis: 'cash'` (used by the demo seed).
 
     Returns the per-account sum of debits and credits, and a `balanced`
     flag. The `confidence` is `1.0` for the SQL aggregation; if the trial
@@ -49,6 +89,7 @@ async def compute_trial_balance(ctx: AgnesContext) -> dict[str, Any]:
     confidence drops so downstream `confidence_gate` routes to review.
     """
     period = await _resolve_period(ctx)
+    basis = _basis_for(ctx)
 
     cur = await ctx.store.accounting.execute(
         "SELECT jl.account_code,"
@@ -57,11 +98,11 @@ async def compute_trial_balance(ctx: AgnesContext) -> dict[str, Any]:
         "FROM journal_lines jl "
         "JOIN journal_entries je ON je.id = jl.entry_id "
         "WHERE je.status = 'posted' "
-        "  AND je.basis = 'accrual' "
+        "  AND je.basis = ? "
         "  AND je.entry_date BETWEEN ? AND ? "
         "GROUP BY jl.account_code "
         "ORDER BY jl.account_code",
-        (period["start_date"], period["end_date"]),
+        (basis, period["start_date"], period["end_date"]),
     )
     rows = list(await cur.fetchall())
     await cur.close()
@@ -82,6 +123,7 @@ async def compute_trial_balance(ctx: AgnesContext) -> dict[str, Any]:
     return {
         "period_code": period["code"],
         "period_status": period["status"],
+        "basis": basis,
         "trial_balance": lines,
         "total_debit_cents": total_debit,
         "total_credit_cents": total_credit,
@@ -93,10 +135,12 @@ async def compute_trial_balance(ctx: AgnesContext) -> dict[str, Any]:
 async def compute_open_entries(ctx: AgnesContext) -> dict[str, Any]:
     """List unpaired accrual entries inside the closing period.
 
+    Always queries `accrual` basis — open entries are by construction an
+    accrual concept (cash basis has no accruals). The `basis` trigger
+    override only applies to the trial-balance lookup.
+
     Returns every accrual entry whose `accrual_link_id IS NULL` AND whose
-    `entry_date` falls inside the period. These are entries that should
-    have been matched to a cash payment but were not (an indicator that
-    the period cannot be cleanly closed yet).
+    `entry_date` falls inside the period.
     """
     period = await _resolve_period(ctx)
 

@@ -6,18 +6,25 @@ integer cents; the response envelope hard-codes `currency: "EUR"` until
 multi-currency support lands (Phase 4).
 
 Routes:
-  GET /reports/trial_balance       ?as_of=YYYY-MM-DD&basis=accrual|cash
-  GET /reports/balance_sheet       ?as_of=YYYY-MM-DD&basis=accrual|cash
-  GET /reports/income_statement    ?from=&to=&basis=
-  GET /reports/cashflow            ?from=&to=
-  GET /reports/budget_vs_actuals   ?period=YYYY-MM&employee_id=&category=
-  GET /reports/vat_return          ?period=YYYY-MM
+  GET /reports/trial_balance        ?as_of=YYYY-MM-DD&basis=accrual|cash
+  GET /reports/balance_sheet        ?as_of=YYYY-MM-DD&basis=accrual|cash
+  GET /reports/income_statement     ?from=&to=&basis=
+  GET /reports/cashflow             ?from=&to=
+  GET /reports/budget_vs_actuals    ?period=YYYY-MM&employee_id=&category=
+  GET /reports/vat_return           ?period=YYYY-MM
+  GET /reports/bank_reconciliation  ?period_code=YYYY-Qn   → text/csv
+  GET /reports/ai-costs             ?start=&end=&group_by=employee,provider
+  GET /reports/playbooks            ?since=&min_count=&limit= → repeated prompt-pattern detection
 """
 from __future__ import annotations
 
+import csv
+import io
+from datetime import date, datetime, timezone
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import Response
 
 from .runs import _rows_to_dicts
 
@@ -36,7 +43,7 @@ _CASH_ACCOUNT = "512"  # PCG Banque — single bank account in MVP.
 async def trial_balance(
     request: Request,
     as_of: Annotated[str, Query(pattern=r"^\d{4}-\d{2}-\d{2}$")],
-    basis: Annotated[Literal["cash", "accrual"], Query()] = "accrual",
+    basis: Annotated[Literal["cash", "accrual"], Query()] = "cash",
 ) -> dict[str, Any]:
     store = request.app.state.store
     cur = await store.accounting.execute(
@@ -84,7 +91,7 @@ async def trial_balance(
 async def balance_sheet(
     request: Request,
     as_of: Annotated[str, Query(pattern=r"^\d{4}-\d{2}-\d{2}$")],
-    basis: Annotated[Literal["cash", "accrual"], Query()] = "accrual",
+    basis: Annotated[Literal["cash", "accrual"], Query()] = "cash",
 ) -> dict[str, Any]:
     """Balance sheet sections.
 
@@ -192,7 +199,7 @@ async def income_statement(
     request: Request,
     from_: Annotated[str, Query(alias="from", pattern=r"^\d{4}-\d{2}-\d{2}$")],
     to: Annotated[str, Query(pattern=r"^\d{4}-\d{2}-\d{2}$")],
-    basis: Annotated[Literal["cash", "accrual"], Query()] = "accrual",
+    basis: Annotated[Literal["cash", "accrual"], Query()] = "cash",
 ) -> dict[str, Any]:
     store = request.app.state.store
     cur = await store.accounting.execute(
@@ -534,4 +541,354 @@ async def vat_return(
             "deductible_cents": deductible,
             "net_due_cents": collected - deductible,
         },
+    }
+
+
+# --------------------------------------------------------------------------- #
+# Bank reconciliation (CSV export)
+# --------------------------------------------------------------------------- #
+
+@router.get("/bank_reconciliation")
+async def bank_reconciliation(
+    request: Request,
+    period_code: Annotated[str, Query(pattern=r"^\d{4}-Q[1-4]$")],
+) -> Response:
+    """CSV reconciliation of `swan_transactions` vs posted journal entries.
+
+    Matching heuristic per row:
+      1. Sum journal_lines.debit_cents (== credit_cents by invariant) per
+         posted entry whose `entry_date == swan.execution_date`.
+      2. A swan tx matches if exactly one such entry has a leg total
+         equal to `swan.amount_cents`. Multiple matches → 'ambiguous',
+         no match → 'no entry', amount mismatch on a same-day single
+         candidate → 'amount mismatch'.
+
+    Period bounds come from `accounting_periods`. 404 if `period_code`
+    is unknown.
+    """
+    store = request.app.state.store
+
+    cur = await store.accounting.execute(
+        "SELECT start_date, end_date FROM accounting_periods WHERE code = ?",
+        (period_code,),
+    )
+    period_row = await cur.fetchone()
+    await cur.close()
+    if period_row is None:
+        raise HTTPException(
+            status_code=404, detail=f"accounting_period {period_code!r} not found"
+        )
+    start_date = str(period_row[0])
+    end_date = str(period_row[1])
+
+    cur = await store.accounting.execute(
+        "SELECT id, side, type, status, amount_cents, counterparty_label, execution_date "
+        "FROM swan_transactions "
+        "WHERE execution_date BETWEEN ? AND ? "
+        "ORDER BY execution_date ASC, id ASC",
+        (start_date, end_date),
+    )
+    swan_rows = list(await cur.fetchall())
+    await cur.close()
+
+    # Build candidate index: per (entry_date, total_debit_cents) → [entry_id, …]
+    # total_debit_cents is the sum of debit legs (== credit legs for balanced
+    # entries). One swan tx → at most one journal entry by current convention,
+    # but we surface ambiguous matches rather than silently picking one.
+    cur = await store.accounting.execute(
+        "SELECT je.id, je.entry_date, COALESCE(SUM(jl.debit_cents), 0) AS total_debit_cents "
+        "FROM journal_entries je "
+        "JOIN journal_lines jl ON jl.entry_id = je.id "
+        "WHERE je.status = 'posted' "
+        "  AND je.entry_date BETWEEN ? AND ? "
+        "GROUP BY je.id",
+        (start_date, end_date),
+    )
+    je_rows = list(await cur.fetchall())
+    await cur.close()
+
+    candidates: dict[tuple[str, int], list[int]] = {}
+    for r in je_rows:
+        key = (str(r[1]), int(r[2]))
+        candidates.setdefault(key, []).append(int(r[0]))
+
+    buf = io.StringIO()
+    writer = csv.writer(buf, lineterminator="\n")
+    writer.writerow([
+        "swan_id", "execution_date", "side", "type", "counterparty_label",
+        "amount_cents", "status", "journal_entry_id", "matched", "notes",
+    ])
+
+    for r in swan_rows:
+        swan_id = str(r[0])
+        side = str(r[1])
+        tx_type = str(r[2])
+        status = str(r[3])
+        amount_cents = int(r[4])
+        counterparty = r[5] if r[5] is not None else ""
+        execution_date = str(r[6])
+
+        key = (execution_date, amount_cents)
+        matches = candidates.get(key, [])
+        if len(matches) == 1:
+            je_id: Any = matches[0]
+            matched = "Y"
+            notes = "matched"
+        elif len(matches) > 1:
+            je_id = matches[0]
+            matched = "N"
+            notes = f"ambiguous ({len(matches)} candidates)"
+        else:
+            # Did any same-day entry exist with a different amount?
+            same_day_amounts = [
+                amt for (d, amt) in candidates.keys() if d == execution_date
+            ]
+            je_id = ""
+            matched = "N"
+            if same_day_amounts:
+                notes = "amount mismatch"
+            else:
+                notes = "no entry"
+
+        writer.writerow([
+            swan_id, execution_date, side, tx_type, counterparty,
+            amount_cents, status, je_id, matched, notes,
+        ])
+
+    body = buf.getvalue().encode("utf-8")
+    headers = {
+        "Content-Disposition": f'attachment; filename="bank_reconciliation_{period_code}.csv"',
+        "X-Content-Type-Options": "nosniff",
+    }
+    return Response(content=body, media_type="text/csv; charset=utf-8", headers=headers)
+
+
+# --------------------------------------------------------------------------- #
+# AI cost pivot
+# --------------------------------------------------------------------------- #
+
+# Whitelist of group_by keys → (SQL select expression, SQL group expression,
+# JSON output key). Avoids any string interpolation of user input into SQL.
+# NOTE: 'pipeline' currently joins only `agent_decisions.node_id` to dodge a
+# cross-DB join into orchestration.db. The output key is still 'pipeline' so
+# the frontend stays forward-compatible — it'll start showing the real
+# pipeline name once that join lands.
+_AI_COST_GROUP_BY: dict[str, tuple[str, str, str]] = {
+    "employee": (
+        "COALESCE(e.full_name, '(unattributed)') AS employee",
+        "COALESCE(e.full_name, '(unattributed)')",
+        "employee",
+    ),
+    "department": (
+        "COALESCE(e.department, '(unattributed)') AS department",
+        "COALESCE(e.department, '(unattributed)')",
+        "department",
+    ),
+    "provider": ("ac.provider AS provider", "ac.provider", "provider"),
+    "model": ("ac.model AS model", "ac.model", "model"),
+    "pipeline": ("d.node_id AS pipeline", "d.node_id", "pipeline"),
+    "node": ("d.node_id AS node", "d.node_id", "node"),
+    # Time pivot: bucket by calendar day (UTC). Used by the AI-Spend
+    # 14-day trend chart on the frontend.
+    "day": ("DATE(ac.created_at) AS day", "DATE(ac.created_at)", "day"),
+}
+
+
+@router.get("/ai-costs")
+async def ai_costs(
+    request: Request,
+    start: Annotated[str | None, Query(pattern=r"^\d{4}-\d{2}-\d{2}$")] = None,
+    end: Annotated[str | None, Query(pattern=r"^\d{4}-\d{2}-\d{2}$")] = None,
+    group_by: Annotated[str, Query()] = "employee,provider",
+) -> dict[str, Any]:
+    """Pivoted AI-cost roll-up over `audit.agent_costs`.
+
+    The wedge query: "how much did <provider> bill us this <period>, per
+    <employee>." Returns one row per `group_by` tuple, sorted by spend DESC.
+    """
+    today = datetime.now(timezone.utc).date()
+    if end is None:
+        end_date = today
+    else:
+        end_date = date.fromisoformat(end)
+    if start is None:
+        start_date = end_date.replace(day=1)
+    else:
+        start_date = date.fromisoformat(start)
+
+    # Validate group_by against the whitelist; preserve user-supplied order.
+    raw_keys = [k.strip() for k in group_by.split(",") if k.strip()]
+    if not raw_keys:
+        raise HTTPException(status_code=400, detail="group_by must not be empty")
+    seen: set[str] = set()
+    keys: list[str] = []
+    for k in raw_keys:
+        if k not in _AI_COST_GROUP_BY:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"group_by key {k!r} not allowed; "
+                    f"choose from {sorted(_AI_COST_GROUP_BY.keys())}"
+                ),
+            )
+        if k not in seen:
+            seen.add(k)
+            keys.append(k)
+
+    select_exprs = [_AI_COST_GROUP_BY[k][0] for k in keys]
+    group_exprs = [_AI_COST_GROUP_BY[k][1] for k in keys]
+    output_keys = [_AI_COST_GROUP_BY[k][2] for k in keys]
+
+    # `BETWEEN ? AND ?` on `created_at` (TEXT timestamp) — extend `end` to the
+    # last second of the day so callers passing a YYYY-MM-DD inclusive bound
+    # don't drop same-day rows.
+    start_ts = f"{start_date.isoformat()} 00:00:00"
+    end_ts = f"{end_date.isoformat()} 23:59:59"
+
+    sql = (
+        "SELECT "
+        + ", ".join(select_exprs)
+        + ", "
+        + "       SUM(ac.cost_micro_usd) AS cost_micro_usd, "
+        + "       COUNT(*)               AS calls, "
+        + "       SUM(ac.input_tokens)   AS input_tokens, "
+        + "       SUM(ac.output_tokens)  AS output_tokens "
+        + "FROM agent_costs ac "
+        + "LEFT JOIN employees e ON e.id = ac.employee_id "
+        + "LEFT JOIN agent_decisions d ON d.id = ac.decision_id "
+        + "WHERE ac.created_at BETWEEN ? AND ? "
+        + "GROUP BY " + ", ".join(group_exprs) + " "
+        + "ORDER BY cost_micro_usd DESC "
+        + "LIMIT 200"
+    )
+
+    store = request.app.state.store
+    cur = await store.audit.execute(sql, (start_ts, end_ts))
+    rows = _rows_to_dicts(list(await cur.fetchall()))
+    await cur.close()
+
+    out_rows: list[dict[str, Any]] = []
+    total_cost = 0
+    total_calls = 0
+    total_in = 0
+    total_out = 0
+    for r in rows:
+        cost = int(r["cost_micro_usd"] or 0)
+        calls = int(r["calls"] or 0)
+        in_tok = int(r["input_tokens"] or 0)
+        out_tok = int(r["output_tokens"] or 0)
+        total_cost += cost
+        total_calls += calls
+        total_in += in_tok
+        total_out += out_tok
+        item: dict[str, Any] = {k: r[k] for k in output_keys}
+        item["cost_micro_usd"] = cost
+        item["calls"] = calls
+        item["input_tokens"] = in_tok
+        item["output_tokens"] = out_tok
+        out_rows.append(item)
+
+    return {
+        "start": start_date.isoformat(),
+        "end": end_date.isoformat(),
+        "group_by": keys,
+        "rows": out_rows,
+        "totals": {
+            "cost_micro_usd": total_cost,
+            "calls": total_calls,
+            "input_tokens": total_in,
+            "output_tokens": total_out,
+        },
+    }
+
+
+# --------------------------------------------------------------------------- #
+# Playbooks — repeated prompt-pattern detection
+# --------------------------------------------------------------------------- #
+
+@router.get("/playbooks")
+async def playbooks(
+    request: Request,
+    since: Annotated[str | None, Query(pattern=r"^\d{4}-\d{2}-\d{2}$")] = None,
+    min_count: Annotated[int, Query(ge=2, le=1000)] = 5,
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+) -> dict[str, Any]:
+    """Detect recurring (employee, prompt_hash, node) triples.
+
+    The wedge for the "Marie ran the same workflow 40 times this month"
+    pitch line. Pure SQL over `agent_decisions × agent_costs × employees`,
+    grouping by `(prompt_hash, employee_id, node_id)` and surfacing
+    everything with `COUNT(*) >= min_count`. Sorted by run_count DESC, then
+    total_cost_micro_usd DESC.
+
+    `since` defaults to first-of-current-month. `min_count` defaults to 5
+    (a tighter floor than the demo's 40 so a fresh seed shows results).
+    `prompt_hash IS NULL` rows are excluded — those are pre-hash decisions
+    or rule-based shortcuts that aren't really "patterns."
+
+    Output is intentionally a flat list of candidates — turning a candidate
+    into a real playbook (wiki page + cross-team recommendation) is C3.
+    """
+    today = datetime.now(timezone.utc).date()
+    if since is None:
+        start_date = today.replace(day=1)
+    else:
+        start_date = date.fromisoformat(since)
+    start_ts = f"{start_date.isoformat()} 00:00:00"
+
+    sql = (
+        "SELECT d.prompt_hash AS prompt_hash, "
+        "       d.node_id     AS node, "
+        "       ac.employee_id AS employee_id, "
+        "       e.full_name   AS employee, "
+        "       e.email       AS email, "
+        "       e.department  AS department, "
+        "       COUNT(*)                 AS run_count, "
+        "       SUM(ac.cost_micro_usd)   AS total_cost_micro_usd, "
+        "       SUM(ac.input_tokens)     AS input_tokens, "
+        "       SUM(ac.output_tokens)    AS output_tokens, "
+        "       MIN(d.id)                AS sample_decision_id, "
+        "       MAX(d.run_id_logical)    AS last_run_id, "
+        "       MIN(d.started_at)        AS first_seen_at, "
+        "       MAX(d.started_at)        AS last_seen_at "
+        "FROM agent_decisions d "
+        "JOIN agent_costs ac ON ac.decision_id = d.id "
+        "LEFT JOIN employees e ON e.id = ac.employee_id "
+        "WHERE d.prompt_hash IS NOT NULL "
+        "  AND d.started_at >= ? "
+        "GROUP BY d.prompt_hash, d.node_id, ac.employee_id "
+        "HAVING COUNT(*) >= ? "
+        "ORDER BY run_count DESC, total_cost_micro_usd DESC "
+        "LIMIT ?"
+    )
+
+    store = request.app.state.store
+    cur = await store.audit.execute(sql, (start_ts, min_count, limit))
+    rows = _rows_to_dicts(list(await cur.fetchall()))
+    await cur.close()
+
+    items: list[dict[str, Any]] = []
+    for r in rows:
+        items.append({
+            "prompt_hash": r["prompt_hash"],
+            "node": r["node"],
+            "employee_id": int(r["employee_id"]) if r["employee_id"] is not None else None,
+            "employee": r["employee"] or "(unattributed)",
+            "email": r["email"],
+            "department": r["department"],
+            "run_count": int(r["run_count"]),
+            "total_cost_micro_usd": int(r["total_cost_micro_usd"] or 0),
+            "input_tokens": int(r["input_tokens"] or 0),
+            "output_tokens": int(r["output_tokens"] or 0),
+            "sample_decision_id": int(r["sample_decision_id"]),
+            "last_run_id": int(r["last_run_id"]) if r["last_run_id"] is not None else None,
+            "first_seen_at": r["first_seen_at"],
+            "last_seen_at": r["last_seen_at"],
+        })
+
+    return {
+        "since": start_date.isoformat(),
+        "min_count": min_count,
+        "items": items,
+        "total_patterns": len(items),
     }

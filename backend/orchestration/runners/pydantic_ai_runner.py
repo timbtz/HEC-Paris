@@ -16,7 +16,7 @@ from __future__ import annotations
 import asyncio
 import os
 import time
-from typing import Any, TYPE_CHECKING
+from typing import Any, Iterable, TYPE_CHECKING
 
 from .base import AgentResult, TokenUsage
 from .cerebras_impl import (
@@ -137,8 +137,12 @@ class PydanticAiRunner:
         max_tokens: int = 1024,
         deadline_s: float = 4.5,
         seed: int | None = None,
+        wiki_context: Iterable[tuple[int, int]] | None = None,
     ) -> AgentResult:
-        ph = prompt_hash(model, system, tools, messages)
+        wiki_refs: list[tuple[int, int]] = (
+            [(int(p), int(r)) for p, r in wiki_context] if wiki_context else []
+        )
+        ph = prompt_hash(model, system, tools, messages, wiki_context=wiki_refs)
         start = time.monotonic()
         impl = await self._run_impl(
             system=system,
@@ -170,4 +174,5 @@ class PydanticAiRunner:
             finish_reason=impl.get("finish_reason"),
             temperature=temperature,
             seed=seed,
+            wiki_references=list(wiki_refs),
         )

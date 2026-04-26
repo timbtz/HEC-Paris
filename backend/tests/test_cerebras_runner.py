@@ -276,25 +276,30 @@ def test_parse_response_text_only_fallback():
 
 
 def test_cost_micro_usd_for_cerebras_usage_with_reasoning():
-    """1M input + 500k output + 100k reasoning at gpt-oss-120b rates.
+    """1M input + 500k output + 100k reasoning at gpt-oss-120b rates
+    ($0.25 in / $0.69 out, reasoning billed at output rate).
 
-    Expected: 350 (in) + 375 (500k * 750/1M) + 75 (100k * 750/1M) == 800.
-    Will fail until step 14 adds the reasoning-token line to micro_usd.
+    1M * 250_000 + 500k * 690_000 + 100k * 690_000 = 250_000_000_000 +
+      345_000_000_000 + 69_000_000_000 = 664_000_000_000 µUSD-total
+    // 1_000_000 = 664_000 µUSD = $0.664.
     """
     usage = TokenUsage(
         input_tokens=1_000_000,
         output_tokens=500_000,
         reasoning_tokens=100_000,
     )
-    assert micro_usd(usage, "cerebras", "gpt-oss-120b") == 800
+    assert micro_usd(usage, "cerebras", "gpt-oss-120b") == 664_000
 
 
 def test_cost_micro_usd_anthropic_unaffected_by_reasoning_term():
-    """Anthropic always reports reasoning_tokens=0; cost is unchanged."""
+    """Anthropic always reports reasoning_tokens=0; cost is unchanged.
+
+    Sonnet 4: $3/M in + $15/M out.
+      1M * 3_000_000 + 200k * 15_000_000 = 3_000_000_000_000 +
+        3_000_000_000_000 = 6_000_000_000_000 µUSD-total // 1M = 6_000_000.
+    """
     usage = TokenUsage(input_tokens=1_000_000, output_tokens=200_000, reasoning_tokens=0)
-    # 1M * 3000 + 200k * 15000 = 3_000_000_000 + 3_000_000_000 = 6_000_000_000 micro_usd_total
-    # // 1_000_000 = 6000.
-    assert micro_usd(usage, "anthropic", "claude-sonnet-4-6") == 6000
+    assert micro_usd(usage, "anthropic", "claude-sonnet-4-6") == 6_000_000
 
 
 # ---------------------------------------------------------------------------

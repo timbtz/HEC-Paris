@@ -66,9 +66,35 @@ async def _resolve_employee_id(store, resource_id: str) -> int | None:
     )
     row = await cur.fetchone()
     await cur.close()
-    if row is None:
+    if row is not None:
+        return int(row[0])
+
+    # Demo replay fallback (RealMetaPRD §9.5 carve-out for AGNES_SWAN_LOCAL_REPLAY):
+    # the seed puts every swan_transaction on a single company account, so the
+    # account/iban match above never lands. When the replay flag is on, treat the
+    # resource_id as a swan_transactions.id and deterministically attribute it to
+    # one of the active employees by hashing the tx id. Real Swan traffic never
+    # reaches this branch — it always matches a per-employee account above.
+    if os.environ.get("AGNES_SWAN_LOCAL_REPLAY") != "1":
         return None
-    return int(row[0])
+    cur = await store.accounting.execute(
+        "SELECT id FROM swan_transactions WHERE id = ?",
+        (resource_id,),
+    )
+    tx_row = await cur.fetchone()
+    await cur.close()
+    if tx_row is None:
+        return None
+    cur = await store.audit.execute(
+        "SELECT id FROM employees WHERE active = 1 ORDER BY id"
+    )
+    active = await cur.fetchall()
+    await cur.close()
+    if not active:
+        return None
+    import hashlib
+    h = int(hashlib.md5(resource_id.encode()).hexdigest(), 16)
+    return int(active[h % len(active)][0])
 
 
 @router.post("/webhook")

@@ -7,7 +7,7 @@ surface a field zero-fill it.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Protocol, TYPE_CHECKING
+from typing import Any, Iterable, Protocol, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..context import AgnesContext
@@ -36,6 +36,12 @@ class AgentResult:
     temperature: float | None
     seed: int | None
     raw: dict[str, Any] = field(default_factory=dict)
+    # Phase 4.A — Living Rule Wiki citations (PRD-AutonomousCFO §7.3).
+    # Each entry is `(wiki_page_id, wiki_revision_id)`. Threads through
+    # `prompt_hash`, the cross-run cache, and `propose_checkpoint_commit`
+    # so a wiki edit invalidates exactly the agents that read that page
+    # and every reasoning decision is cite-able.
+    wiki_references: list[tuple[int, int]] = field(default_factory=list)
 
 
 class AgentRunner(Protocol):
@@ -53,4 +59,5 @@ class AgentRunner(Protocol):
         max_tokens: int = 1024,
         deadline_s: float = 4.5,
         seed: int | None = None,
+        wiki_context: Iterable[tuple[int, int]] | None = None,
     ) -> AgentResult: ...

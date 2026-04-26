@@ -8,6 +8,13 @@ The closed enum is sourced from ``chart_of_accounts`` at request time so
 adding a new GL code (e.g. 627 for bank fees) without restarting the app
 just works. Re-querying every call is cheap on SQLite and avoids stale-cache
 debugging during the demo.
+
+Phase 4.A (PRD-AutonomousCFO §7.3): before building the system prompt,
+we call ``wiki_reader`` with tags ``[gl_accounts, classification]``. The
+returned page bodies are appended to the system prompt under
+``## Policy reference (Living Rule Wiki)`` and the
+``(wiki_page_id, wiki_revision_id)`` pairs flow into the AgentResult's
+``wiki_references`` field, threading through prompt_hash + cache + audit.
 """
 from __future__ import annotations
 
@@ -18,6 +25,7 @@ from ..context import AgnesContext
 from ..registries import default_cerebras_model, default_runner, get_runner
 from ..runners.base import AgentResult
 from ..store.writes import write_tx
+from ..tools import wiki_reader as wiki_reader_tool
 
 
 async def _load_chart_codes(ctx: AgnesContext) -> list[str]:
@@ -126,10 +134,40 @@ async def run(ctx: AgnesContext) -> AgentResult:
     }
 
     summary = _build_summary(ctx)
-    system = (
+
+    # Phase 4.A — pull Living Rule Wiki pages for GL classification before
+    # building the prompt. `jurisdiction` is read from ctx.metadata when an
+    # upstream resolver/onboarding step set it; otherwise unfiltered.
+    jurisdiction = ctx.metadata.get("jurisdiction") if isinstance(ctx.metadata, dict) else None
+    wiki_payload = await wiki_reader_tool.fetch(
+        ctx,
+        tags=["gl_accounts", "classification"],
+        jurisdiction=jurisdiction,
+    )
+    wiki_pages = wiki_payload.get("pages") or []
+    wiki_references: list[tuple[int, int]] = [
+        (int(p["page_id"]), int(p["revision_id"])) for p in wiki_pages
+    ]
+
+    base_system = (
         "Classify a transaction or invoice line into a GL account from the "
         "closed chart of accounts. Choose the most-specific account."
     )
+    if wiki_pages:
+        # Concatenate verbatim — the wiki body is the policy frame.
+        policy_blocks = "\n\n".join(
+            f"### {p['title']} ({p['path']}, rev {p['revision_number']})\n\n{p['body_md']}"
+            for p in wiki_pages
+        )
+        system = (
+            f"{base_system}\n\n"
+            "## Policy reference (Living Rule Wiki)\n\n"
+            f"{policy_blocks}"
+        )
+    else:
+        # Zero matches → behave exactly like the pre-wiki agent.
+        system = base_system
+
     messages = [
         {
             "role": "user",
@@ -156,6 +194,7 @@ async def run(ctx: AgnesContext) -> AgentResult:
         model=model,
         max_tokens=256,  # was 512 — single-enum pick + confidence is compact.
         temperature=0.0,
+        wiki_context=wiki_references,
     )
 
     # Cache writeback - so the next identical request hits the deterministic

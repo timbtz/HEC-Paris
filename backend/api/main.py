@@ -22,13 +22,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from ..orchestration import _register_production  # noqa: F401 — import side effect
 from ..orchestration.event_bus import bus_reaper_task
 from ..orchestration.store.bootstrap import open_dbs
+from .accounting_periods import router as accounting_periods_router
+from .audit_traces import router as audit_traces_router
 from .dashboard import router as dashboard_router
+from .demo_webhook import router as demo_router
 from .documents import router as documents_router
 from .employees import router as employees_router
+from .gamification import router as gamification_router
 from .period_reports import router as period_reports_router
 from .reports import router as reports_router
 from .runs import router as runs_router
 from .swan_webhook import router as swan_router
+from .wiki import router as wiki_router
 
 try:  # external_webhook is wired by a parallel agent; import is optional.
     from .external_webhook import router as external_router  # type: ignore[import-not-found]
@@ -67,19 +72,24 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_ALLOWED_ORIGINS,
     allow_credentials=False,
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type", "Accept"],
+    allow_methods=["GET", "POST", "PATCH"],
+    allow_headers=["Content-Type", "Accept", "x-agnes-author"],
 )
 
 app.include_router(swan_router)
+app.include_router(demo_router)
 if external_router is not None:
     app.include_router(external_router)
 app.include_router(documents_router)
 app.include_router(employees_router)
+app.include_router(accounting_periods_router)
 app.include_router(period_reports_router)
 app.include_router(runs_router)
 app.include_router(reports_router)
+app.include_router(audit_traces_router)
+app.include_router(wiki_router)
 app.include_router(dashboard_router)
+app.include_router(gamification_router)
 
 
 @app.get("/healthz")

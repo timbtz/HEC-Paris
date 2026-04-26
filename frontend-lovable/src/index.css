@@ -1,0 +1,252 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Agnes — Autonomous CFO
+ * Visual language: HG Capital-inspired. Deep electric indigo on near-black.
+ * Prismatic glass accents. Generous typography. One confident accent.
+ * All colors HSL.
+ */
+
+@layer base {
+  :root {
+    /* DARK is the primary mode for this product */
+    --background: 240 24% 6%;          /* #0B0B14 — near-black with indigo bias */
+    --foreground: 240 20% 96%;         /* near-white */
+
+    --card: 240 22% 9%;                /* #131326 */
+    --card-elevated: 240 24% 11%;      /* slightly brighter card */
+    --card-foreground: 240 20% 96%;
+
+    --popover: 240 22% 9%;
+    --popover-foreground: 240 20% 96%;
+
+    /* Hairlines — quiet, indigo-tinted */
+    --border: 240 18% 18%;             /* #2A2A40 */
+    --input: 240 18% 18%;
+    --ring: 245 80% 65%;
+
+    /* Muted */
+    --muted: 240 18% 14%;
+    --muted-foreground: 240 10% 62%;   /* readable secondary */
+
+    --secondary: 240 18% 14%;
+    --secondary-foreground: 240 20% 96%;
+
+    /* Accent: HG electric indigo */
+    --primary: 245 80% 62%;            /* #5B4EE0 — the core HG indigo */
+    --primary-foreground: 240 20% 98%;
+    --primary-glow: 250 95% 72%;       /* lighter for glows / gradients */
+    --primary-deep: 245 70% 35%;       /* deeper for shadows */
+
+    --accent: 245 80% 62%;
+    --accent-foreground: 240 20% 98%;
+
+    /* Money positive — quieter mint, doesn't fight the indigo */
+    --positive: 158 60% 52%;
+    --positive-foreground: 240 24% 6%;
+
+    /* Warning — refined amber-rose */
+    --warning: 32 92% 60%;
+    --warning-foreground: 240 24% 6%;
+
+    /* Failure */
+    --destructive: 0 72% 58%;
+    --destructive-foreground: 240 20% 98%;
+
+    /* Adoption / gamification accents (lifted from pulse-ai-grow).
+     * Coin = warm amber, used for coin counts and "+N" deltas.
+     * Streak = orange, used for the streak fire icon and active dots.
+     * Both are accent-only — they don't replace the indigo identity. */
+    --coin: 38 92% 56%;
+    --coin-foreground: 240 24% 6%;
+    --streak: 18 95% 60%;
+    --streak-foreground: 240 24% 6%;
+
+    --radius: 0.625rem;
+
+    /* Sidebar */
+    --sidebar-background: 240 26% 5%;
+    --sidebar-foreground: 240 20% 96%;
+    --sidebar-primary: 245 80% 62%;
+    --sidebar-primary-foreground: 240 20% 98%;
+    --sidebar-accent: 240 22% 11%;
+    --sidebar-accent-foreground: 240 20% 96%;
+    --sidebar-border: 240 18% 14%;
+    --sidebar-ring: 245 80% 62%;
+
+    /* Signature gradients (used sparingly: hero, primary CTA, brand mark) */
+    --gradient-prism: linear-gradient(135deg, hsl(245 90% 62%) 0%, hsl(265 85% 58%) 50%, hsl(225 95% 60%) 100%);
+    --gradient-glass: linear-gradient(135deg, hsl(245 90% 70% / 0.18) 0%, hsl(265 85% 60% / 0.06) 100%);
+    --gradient-surface: radial-gradient(ellipse at top right, hsl(245 60% 18% / 0.4), transparent 60%);
+
+    /* Shadows: soft, deep, indigo-tinted */
+    --shadow-modal: 0 24px 48px -12px hsl(245 80% 6% / 0.6), 0 4px 12px -4px hsl(0 0% 0% / 0.4);
+    --shadow-glow: 0 0 0 1px hsl(245 80% 62% / 0.2), 0 8px 32px -8px hsl(245 80% 62% / 0.35);
+    --shadow-row: 0 1px 0 hsl(245 80% 62% / 0.04);
+  }
+
+  /* Light mode kept for parity, but the product is designed dark-first */
+  .light {
+    --background: 240 30% 98%;
+    --foreground: 240 24% 8%;
+
+    --card: 0 0% 100%;
+    --card-elevated: 240 30% 99%;
+    --card-foreground: 240 24% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 24% 8%;
+
+    --border: 240 16% 90%;
+    --input: 240 16% 90%;
+    --ring: 245 80% 55%;
+
+    --muted: 240 20% 96%;
+    --muted-foreground: 240 8% 42%;
+
+    --secondary: 240 20% 96%;
+    --secondary-foreground: 240 24% 8%;
+
+    --primary: 245 80% 55%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 250 95% 65%;
+    --primary-deep: 245 70% 28%;
+
+    --accent: 245 80% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --positive: 158 60% 38%;
+    --positive-foreground: 0 0% 100%;
+
+    --warning: 32 92% 48%;
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 0 0% 100%;
+
+    --coin: 38 92% 48%;
+    --coin-foreground: 0 0% 100%;
+    --streak: 18 95% 52%;
+    --streak-foreground: 0 0% 100%;
+
+    --sidebar-background: 240 30% 98%;
+    --sidebar-foreground: 240 24% 8%;
+    --sidebar-primary: 245 80% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 20% 96%;
+    --sidebar-accent-foreground: 240 24% 8%;
+    --sidebar-border: 240 16% 90%;
+    --sidebar-ring: 245 80% 55%;
+
+    --gradient-prism: linear-gradient(135deg, hsl(245 90% 55%) 0%, hsl(265 85% 52%) 50%, hsl(225 95% 56%) 100%);
+    --gradient-glass: linear-gradient(135deg, hsl(245 90% 60% / 0.08) 0%, hsl(265 85% 50% / 0.02) 100%);
+    --gradient-surface: radial-gradient(ellipse at top right, hsl(245 60% 92% / 0.6), transparent 60%);
+
+    --shadow-modal: 0 24px 48px -12px hsl(245 30% 30% / 0.18), 0 4px 12px -4px hsl(0 0% 0% / 0.06);
+    --shadow-glow: 0 0 0 1px hsl(245 80% 55% / 0.18), 0 8px 32px -8px hsl(245 80% 55% / 0.25);
+    --shadow-row: 0 1px 0 hsl(245 80% 55% / 0.04);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-family: 'Inter Tight', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-size: 14px;
+    line-height: 1.5;
+    background-image: var(--gradient-surface);
+    background-attachment: fixed;
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px;
+    letter-spacing: -0.01em;
+  }
+
+  .tnum, table, [data-tnum] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum';
+  }
+
+  /* Display type — used for big numbers on hero cards */
+  .display {
+    font-family: 'Inter Tight', 'Inter', sans-serif;
+    font-weight: 500;
+    letter-spacing: -0.035em;
+    line-height: 1;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+
+  /* Scrollbars: subtle, indigo-tinted */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted)); background-clip: padding-box; border: 2px solid transparent; }
+}
+
+@layer components {
+  .row-hover { transition: background-color 120ms ease-out; }
+  .row-hover:hover { background-color: hsl(var(--muted) / 0.5); }
+
+  /* Surface treatments */
+  .surface-card {
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+  }
+
+  .surface-elevated {
+    background-color: hsl(var(--card-elevated));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    background-image: var(--gradient-glass);
+  }
+
+  /* Hero — for the topmost summary tile */
+  .surface-hero {
+    background:
+      radial-gradient(ellipse at top right, hsl(245 90% 62% / 0.18), transparent 55%),
+      radial-gradient(ellipse at bottom left, hsl(265 85% 58% / 0.1), transparent 55%),
+      hsl(var(--card));
+    border: 1px solid hsl(245 60% 35% / 0.35);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-glow);
+  }
+
+  /* Brand mark — prismatic gradient */
+  .prism-fill {
+    background: var(--gradient-prism);
+    color: hsl(var(--primary-foreground));
+  }
+  .prism-text {
+    background: var(--gradient-prism);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+}

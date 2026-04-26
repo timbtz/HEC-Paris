@@ -2,7 +2,16 @@ name: period_close
 version: 1
 trigger:
   source: pipeline:period_close
+# Phase 4.A — wiki nodes:
+#   read-wiki         eagerly pulls Living Rule Wiki pages with applies_to
+#                     overlapping ["period_close", "anomaly_detection"].
+#                     Caller passes trigger_payload.wiki_tags to specialise.
+#   draft-post-mortem agentic: drafts a post-mortem from the run signals.
+#   write-post-mortem auto-files the draft (or routes to review_queue when
+#                     the agent set requires_human_ratification=true).
 nodes:
+  - id: read-wiki
+    tool: tools.wiki_reader:run
   - id: compute-trial-balance
     tool: tools.period_aggregator:compute_trial_balance
   - id: compute-open-entries
@@ -14,7 +23,7 @@ nodes:
   - id: flag-anomalies
     agent: agents.anomaly_flag:run
     runner: anthropic
-    depends_on: [compute-trial-balance, compute-open-entries, compute-vat]
+    depends_on: [compute-trial-balance, compute-open-entries, compute-vat, read-wiki]
   - id: summarize-period
     tool: tools.period_aggregator:summarize_period
     depends_on: [flag-anomalies]
@@ -29,3 +38,10 @@ nodes:
     tool: tools.review_queue:enqueue
     depends_on: [summarize-period, gate-confidence]
     when: conditions.gating:needs_review
+  - id: draft-post-mortem
+    agent: agents.wiki_post_mortem:run
+    runner: anthropic
+    depends_on: [summarize-period, gate-confidence, flag-anomalies]
+  - id: write-post-mortem
+    tool: tools.wiki_writer:run
+    depends_on: [draft-post-mortem]

@@ -52,9 +52,10 @@ async def test_writes_both_rows(store):
     assert row[2] == "claude-haiku-4-5"
     assert row[3] == 100 and row[4] == 50
     assert row[5] == 10 and row[6] == 5
-    # Haiku rates: 100*800 + 50*4000 + 10*80 + 5*1000 = 80000 + 200000 + 800 + 5000 = 285800
-    # Floor div by 1_000_000 → 0
-    assert row[7] == 0
+    # Haiku 4 rates ($0.80 / $4 / $0.08 / $1 per M):
+    #   100*800_000 + 50*4_000_000 + 10*80_000 + 5*1_000_000 = 285_800_000 µUSD-total
+    #   Floor div by 1_000_000 → 285 µUSD ≈ $0.000285.
+    assert row[7] == 285
 
 
 async def test_atomic_rollback(store, monkeypatch):

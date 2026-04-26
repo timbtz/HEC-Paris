@@ -72,11 +72,33 @@ wired to the backend via a Vite dev proxy.
   `vat_calculator.compute_vat_return`,
   `retained_earnings_builder.build_closing_entry`,
   `report_renderer.render`.
-- **Production agents (4).** `counterparty_classifier`,
+- **Production agents (5).** `counterparty_classifier`,
   `gl_account_classifier_agent` (chart-of-accounts enum at request
   time), `document_extractor` (Claude vision + `submit_invoice` strict
-  schema, `timeout=15.0`), and `anomaly_flag_agent` (period-close /
-  VAT-return anomaly detection with closed-enum `kind`).
+  schema, `timeout=15.0`), `anomaly_flag_agent` (period-close /
+  VAT-return anomaly detection with closed-enum `kind`), and
+  `wiki_post_mortem_agent` (drafts a post-mortem markdown page from
+  every reporting-pipeline run; the writer auto-files observations or
+  routes proposed `policies/*` changes through `review_queue`).
+- **Self-improving Living Rule Wiki (Phase 4.A).** Markdown corpus in
+  `orchestration.db` (`wiki_pages` + `wiki_revisions` + FTS5 contentless
+  virtual table). Every reasoning agent — `gl_account_classifier`,
+  `counterparty_classifier`, `anomaly_flag`, `document_extractor` —
+  calls `wiki_reader` with role-tags before constructing its prompt,
+  and threads `wiki_context=[(page_id, revision_id), …]` into
+  `runner.run`. The runner now hashes the citation list into
+  `prompt_hash` and stamps `result.wiki_references` by construction, so
+  a wiki edit invalidates exactly the agent calls that read that page.
+  The reporting pipelines (`period_close`, `vat_return`,
+  `year_end_close`) ship with terminal `draft-post-mortem` +
+  `write-post-mortem` nodes — each run files an observation under
+  `post_mortems/{period}/{pipeline}_{run_id}.md`, and subsequent runs
+  read prior post-mortems as part of their wiki context. `tools.
+  wiki_search:run` exposes BM25 over the FTS5 index when the right tag
+  isn't known up front. `wiki/maintenance.py` keeps `log.md` and
+  `index.md` updated automatically. The CFO can edit policies via
+  `POST /wiki/pages` / `PUT /wiki/pages/{id}` (auth-shim `x-agnes-author`
+  header).
 - **Production conditions.** `gating.{passes_confidence,needs_review,
   posted}`, `counterparty.unresolved`, `gl.unclassified`,
   `documents.{totals_ok,totals_mismatch}`, plus
@@ -111,8 +133,10 @@ wired to the backend via a Vite dev proxy.
   (long-lived SSE; pipeline lifecycle events fan out here so the Today
   card updates without polling), and the Phase 3 SQL-only reports
   surface: `GET /reports/{trial_balance,balance_sheet,income_statement,
-  cashflow,budget_vs_actuals,vat_return}`. `CORSMiddleware` allows the
-  Vite dev origin (`http://localhost:5173`).
+  cashflow,budget_vs_actuals,vat_return}`, plus the Phase 4.A wiki
+  surface: `GET /wiki/pages`, `GET /wiki/pages/{id}{,/revisions{,/{rev_id}}}`,
+  `POST /wiki/pages`, `PUT /wiki/pages/{id}`. `CORSMiddleware` allows
+  the Vite dev origin (`http://localhost:5173`).
 - **Replay script.** `python -m backend.scripts.replay_swan_seed`
   iterates the seeded `swan_transactions` and POSTs synthetic webhooks
   through `/swan/webhook`, end-to-end populating the ledger for the
@@ -215,16 +239,30 @@ curl http://127.0.0.1:8000/healthz   # → {"status":"ok"}
 
 ## Run the frontend
 
+There are now **two** frontends in the tree. `frontend-lovable/` is the
+**primary** one (cloned from
+[agnes-finance-hub](https://github.com/timbtz/agnes-finance-hub) — Vite +
+React 18 + shadcn/ui + Radix + TanStack Query). `frontend/` is kept as
+secondary for reference.
+
 ```bash
 # Backend (terminal 1):
 AGNES_DATA_DIR=./data uvicorn backend.api.main:app --workers 1 --port 8000
 
-# Frontend dev server (terminal 2):
+# Primary (Lovable) frontend dev server (terminal 2):
+cd frontend-lovable
+bun install        # first time only (npm install also works)
+bun run dev        # → http://localhost:5174
+
+# Secondary frontend (terminal 2 alt):
 cd frontend
 npm install        # first time only
 npm run dev        # → http://localhost:5173
 ```
 
-Vite's dev server proxies every backend prefix to `:8000`, so the
-browser sees a single origin. For a production-style smoke test:
-`npm run build` emits a static bundle into `frontend/dist/`.
+Both Vite dev servers proxy every backend prefix to `:8000`, so the
+browser sees a single origin (no CORS). The Lovable frontend's
+`src/lib/api.ts` reads `VITE_API_BASE_URL` from `.env.local`; it's set
+to the dev server's own origin so requests come back through the proxy.
+For a production-style smoke test: `bun run build` (or `npm run build`)
+emits a static bundle into `frontend-lovable/dist/`.

@@ -34,7 +34,8 @@ async def _run_status(store, run_id: int) -> tuple[str, str | None]:
 # --------------------------------------------------------------------------- #
 
 async def test_noop_demo_full_run(store, fake_anthropic, fake_anthropic_message):
-    """1 pipeline_started + 3×(node_started+node_completed) + 1 pipeline_completed = 8 events."""
+    """1 pipeline_started + 3×(node_started+node_completed) + 1 agent.decision
+    (PRD-AutonomousCFO §7.4) + 1 pipeline_completed = 9 events."""
     _, fake = fake_anthropic
     fake.messages._response = fake_anthropic_message(
         tool_input={"answer": "ok", "confidence": 0.9},
@@ -57,9 +58,9 @@ async def test_noop_demo_full_run(store, fake_anthropic, fake_anthropic_message)
     types = [e[0] for e in events]
     assert types == [
         "pipeline_started",
-        "node_started", "node_completed",   # tool-a
-        "node_started", "node_completed",   # agent-b
-        "node_started", "node_completed",   # tool-c
+        "node_started", "node_completed",                     # tool-a
+        "node_started", "agent.decision", "node_completed",   # agent-b
+        "node_started", "node_completed",                     # tool-c
         "pipeline_completed",
     ], f"events: {events}"
 
@@ -69,7 +70,8 @@ async def test_noop_demo_full_run(store, fake_anthropic, fake_anthropic_message)
 
 
 async def test_event_count_invariant(store, fake_anthropic, fake_anthropic_message):
-    """Adapt RealMetaPRD §11 line 1554: noop has 3 nodes → 1 + 3*2 + 1 = 8 events."""
+    """RealMetaPRD §11 line 1554, extended by PRD-AutonomousCFO §7.4: noop has
+    3 nodes (1 agent) → 1 + 3*2 + 1 + 1 = 9 events."""
     _, fake = fake_anthropic
     fake.messages._response = fake_anthropic_message(
         tool_input={"answer": "ok"}, tool_name="submit_test")
@@ -82,7 +84,7 @@ async def test_event_count_invariant(store, fake_anthropic, fake_anthropic_messa
         background=False,
     )
     events = await _events_for_run(store, run_id)
-    assert len(events) == 8
+    assert len(events) == 9
 
 
 # --------------------------------------------------------------------------- #

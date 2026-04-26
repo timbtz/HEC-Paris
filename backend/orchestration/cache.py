@@ -4,11 +4,18 @@ Source: RealMetaPRD §6.4 line 525 (key shape), §7.5 lines 1092-1104
 (`node_cache` schema), PRD1_VALIDATION_BRIEFING A2 (float canonicalization).
 
 Cache key formula:
-    sha256(f"{node_id}|{CODE_VERSION}|{canonical_json(input)}")
+    sha256(f"{node_id}|{CODE_VERSION}|{canonical_json(input + wiki_context)}")
 
 `json.dumps(sort_keys=True)` does NOT canonicalize floats across
 platforms (`1.0` vs `1` representation drift); we use `repr(float(x))`
 through the `default=` hook to defeat that.
+
+Phase 4.A (PRD-AutonomousCFO §7.3): the cache key now also incorporates
+the agent's `wiki_context` — a sorted list of `(page_id, revision_id)`
+pairs. A wiki edit that bumps a cited revision changes the cache key
+for every node that read that page, so the next run misses cache and
+re-runs the agent. Nodes that did not read the edited page are
+unaffected.
 """
 from __future__ import annotations
 
@@ -17,7 +24,7 @@ import hashlib
 import json
 import math
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Iterable
 
 import aiosqlite
 
@@ -58,10 +65,24 @@ def _normalize(value: Any) -> Any:
     return value
 
 
-def cache_key(node_id: str, canonical_input: Any) -> str:
-    """Compute the deterministic cache key for a node-input pair."""
+def cache_key(
+    node_id: str,
+    canonical_input: Any,
+    wiki_context: Iterable[tuple[int, int]] | None = None,
+) -> str:
+    """Compute the deterministic cache key for a node-input pair.
+
+    `wiki_context` is an optional list of `(page_id, revision_id)` pairs
+    cited by the agent. Sorted ascending here so callers needn't care
+    about the order they passed them in.
+    """
+    wiki_pairs = sorted(
+        ([int(pid), int(rid)] for pid, rid in (wiki_context or [])),
+        key=lambda p: (p[0], p[1]),
+    )
+    keyed_input = {"input": _normalize(canonical_input), "wiki_context": wiki_pairs}
     payload = json.dumps(
-        _normalize(canonical_input),
+        keyed_input,
         sort_keys=True,
         separators=(",", ":"),
         default=_canonical_default,

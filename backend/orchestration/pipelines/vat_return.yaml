@@ -2,7 +2,11 @@ name: vat_return
 version: 1
 trigger:
   source: pipeline:vat_return
+# Phase 4.A — wiki nodes mirror period_close.yaml. Tags expected on the
+# trigger payload: ["vat_return", "anomaly_detection"].
 nodes:
+  - id: read-wiki
+    tool: tools.wiki_reader:run
   - id: compute-trial-balance
     tool: tools.period_aggregator:compute_trial_balance
   - id: compute-open-entries
@@ -14,7 +18,7 @@ nodes:
   - id: flag-anomalies
     agent: agents.anomaly_flag:run
     runner: anthropic
-    depends_on: [compute-vat, compute-open-entries]
+    depends_on: [compute-vat, compute-open-entries, read-wiki]
   - id: summarize-period
     tool: tools.period_aggregator:summarize_period
     depends_on: [flag-anomalies]
@@ -29,3 +33,10 @@ nodes:
     tool: tools.review_queue:enqueue
     depends_on: [summarize-period, gate-confidence]
     when: conditions.gating:needs_review
+  - id: draft-post-mortem
+    agent: agents.wiki_post_mortem:run
+    runner: anthropic
+    depends_on: [summarize-period, gate-confidence, flag-anomalies]
+  - id: write-post-mortem
+    tool: tools.wiki_writer:run
+    depends_on: [draft-post-mortem]

@@ -21,6 +21,7 @@ from ..context import AgnesContext
 from ..registries import default_cerebras_model, default_runner, get_runner
 from ..runners.base import AgentResult
 from ..store.writes import write_tx
+from ..tools import wiki_reader as wiki_reader_tool
 
 
 _SYSTEM_PROMPT = (
@@ -188,6 +189,32 @@ async def run(ctx: AgnesContext) -> AgentResult:
         f"Candidates:\n{_format_candidates(candidates)}"
     )
 
+    # Phase 4.A — Living Rule Wiki injection. Tags reflect the agent's role:
+    # counterparty matching policy + classification heuristics. Jurisdiction
+    # comes from upstream resolvers via ctx.metadata when set.
+    jurisdiction = ctx.metadata.get("jurisdiction") if isinstance(ctx.metadata, dict) else None
+    wiki_payload = await wiki_reader_tool.fetch(
+        ctx,
+        tags=["counterparties", "classification"],
+        jurisdiction=jurisdiction,
+    )
+    wiki_pages = wiki_payload.get("pages") or []
+    wiki_references: list[tuple[int, int]] = [
+        (int(p["page_id"]), int(p["revision_id"])) for p in wiki_pages
+    ]
+    if wiki_pages:
+        policy_blocks = "\n\n".join(
+            f"### {p['title']} ({p['path']}, rev {p['revision_number']})\n\n{p['body_md']}"
+            for p in wiki_pages
+        )
+        system = (
+            f"{_SYSTEM_PROMPT}\n\n"
+            "## Policy reference (Living Rule Wiki)\n\n"
+            f"{policy_blocks}"
+        )
+    else:
+        system = _SYSTEM_PROMPT
+
     runner_key = default_runner()
     model = (
         default_cerebras_model("classifier")
@@ -197,12 +224,13 @@ async def run(ctx: AgnesContext) -> AgentResult:
     runner = get_runner(runner_key)
     result = await runner.run(
         ctx=ctx,
-        system=_SYSTEM_PROMPT,
+        system=system,
         tools=[_SUBMIT_TOOL],
         messages=[{"role": "user", "content": user_content}],
         model=model,
         max_tokens=256,  # was 512 — closed-list pick is compact.
         temperature=0.0,
+        wiki_context=wiki_references,
     )
 
     # Cache writeback if the model picked something (non-null counterparty_id).
