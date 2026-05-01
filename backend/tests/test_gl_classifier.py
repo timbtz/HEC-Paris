@@ -7,12 +7,12 @@ Migration 0003 seeds the rules used here:
 """
 from __future__ import annotations
 
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 from backend.orchestration.tools.gl_account_classifier import run
 
 
-def _ctx(store, *, node_outputs: dict | None = None) -> AgnesContext:
-    return AgnesContext(
+def _ctx(store, *, node_outputs: dict | None = None) -> FingentContext:
+    return FingentContext(
         run_id=1,
         pipeline_name="test-gl-classifier",
         trigger_source="manual",

@@ -10,7 +10,7 @@ Coverage:
 """
 from __future__ import annotations
 
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 from backend.orchestration.tools.journal_entry_builder import (
     build_accrual,
     build_cash,
@@ -22,8 +22,8 @@ from backend.orchestration.tools.journal_entry_builder import (
 
 
 def _ctx(store, *, node_outputs: dict | None = None,
-         trigger_payload: dict | None = None) -> AgnesContext:
-    return AgnesContext(
+         trigger_payload: dict | None = None) -> FingentContext:
+    return FingentContext(
         run_id=1,
         pipeline_name="test-builder",
         trigger_source="manual",

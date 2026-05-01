@@ -12,15 +12,15 @@ import asyncio
 import pytest
 
 from backend.orchestration import event_bus
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 from backend.orchestration.tools import review_queue
 
 
 pytestmark = pytest.mark.asyncio
 
 
-def _ctx(store, node_outputs: dict) -> AgnesContext:
-    return AgnesContext(
+def _ctx(store, node_outputs: dict) -> FingentContext:
+    return FingentContext(
         run_id=1,
         pipeline_name="transaction_booked",
         trigger_source="external_event:swan.Transaction.Booked",

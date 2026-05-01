@@ -123,7 +123,7 @@ async def main(host: str, port: int, data_dir: Path) -> dict[str, int]:
     secret = os.environ.get("SWAN_WEBHOOK_SECRET", "")
     # Tell `tools.swan_query.fetch_transaction` to skip the Swan API and
     # read from the locally-persisted seed instead.
-    os.environ.setdefault("AGNES_SWAN_LOCAL_REPLAY", "1")
+    os.environ.setdefault("FINGENT_SWAN_LOCAL_REPLAY", "1")
 
     store = await open_dbs(data_dir, run_migrations=False)
     try:
@@ -159,12 +159,12 @@ async def main(host: str, port: int, data_dir: Path) -> dict[str, int]:
 
 def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--host", default=os.environ.get("AGNES_HOST", "localhost"))
-    p.add_argument("--port", type=int, default=int(os.environ.get("AGNES_PORT", "8000")))
+    p.add_argument("--host", default=os.environ.get("FINGENT_HOST", "localhost"))
+    p.add_argument("--port", type=int, default=int(os.environ.get("FINGENT_PORT", "8000")))
     p.add_argument(
         "--data-dir",
         type=Path,
-        default=Path(os.environ.get("AGNES_DATA_DIR", "./data")).resolve(),
+        default=Path(os.environ.get("FINGENT_DATA_DIR", "./data")).resolve(),
     )
     return p.parse_args()
 

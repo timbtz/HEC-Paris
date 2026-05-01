@@ -155,7 +155,7 @@ described.
       `pipeline_started` / `node_started` / `node_completed` / `node_skipped` /
       `node_failed` / `cache_hit` / `pipeline_completed` / `pipeline_failed`
       events emitted to `orchestration.db`
-- ✅ `AgnesContext` dataclass propagated through every node
+- ✅ `FingentContext` dataclass propagated through every node
 - ✅ Tool registry, agent registry, runner registry, named-condition
       registry — all populated by `module.path:symbol` strings; no
       filesystem-scanning decorators
@@ -544,7 +544,7 @@ backend/
     runs.py                  # /pipelines/run/{name}, /runs/{id}, /runs/{id}/stream
     dashboard.py             # /dashboard/stream — top-level SSE
   orchestration/
-    context.py               # AgnesContext dataclass
+    context.py               # FingentContext dataclass
     dag.py                   # Kahn parser, topo layers, cycle detection
     executor.py              # async layer-by-layer runner
     registries.py            # _TOOL_REGISTRY, _AGENT_REGISTRY, _RUNNER_REGISTRY,
@@ -626,7 +626,7 @@ frontend/
 ### 6.6 Concurrency & write discipline
 
 Three `asyncio.Lock` instances (one per DB) held across `BEGIN IMMEDIATE`
-→ `COMMIT`. Tools and runners pass `AgnesContext`; the context exposes
+→ `COMMIT`. Tools and runners pass `FingentContext`; the context exposes
 `async with ctx.write_locks["accounting"]: …` etc. PRAGMAs on connection
 open:
 
@@ -1395,8 +1395,8 @@ pydantic_ai = ["pydantic-ai>=0.1"]
 - `.env.local` (loaded with `python-dotenv`); never committed.
 - Pipelines, routing, and registries are version-controlled.
 - `confidence_thresholds` is the runtime knob; UI-tunable in Phase 2.
-- `AGNES_DATA_DIR` (default `./data/`) — DB location.
-- `AGNES_RUNNERS_ENABLED` — comma-list of enabled runners
+- `FINGENT_DATA_DIR` (default `./data/`) — DB location.
+- `FINGENT_RUNNERS_ENABLED` — comma-list of enabled runners
   (default `anthropic`).
 
 ### 9.4 Security in scope
@@ -1590,7 +1590,7 @@ caches deterministically.
 - ✅ YAML loader with strict-key rejection and required-field validation
 - ✅ Kahn topological sort with cycle detection
 - ✅ Four registries (tools / agents / runners / conditions); empty
-- ✅ `AgnesContext` propagated through every node
+- ✅ `FingentContext` propagated through every node
 - ✅ Layer-by-layer `asyncio.gather` with fail-fast
 - ✅ `pipeline_runs` + `pipeline_events` writes via single-writer locks
 - ✅ Cross-run cache: read-before-dispatch, write-after-success, hit event

@@ -38,7 +38,7 @@ class _FakeClient:
 
 
 def _make_ctx(store, *, trigger_payload: dict[str, Any], node_outputs: dict[str, Any] | None = None):
-    return context_module.AgnesContext(
+    return context_module.FingentContext(
         run_id=1,
         pipeline_name="test",
         trigger_source="test",

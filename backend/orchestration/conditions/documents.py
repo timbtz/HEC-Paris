@@ -8,14 +8,14 @@ extracted PDF totals tie out (subtotal + VAT == total within ±1 cent).
 """
 from __future__ import annotations
 
-from ..context import AgnesContext
+from ..context import FingentContext
 
 
-def totals_ok(ctx: AgnesContext) -> bool:
+def totals_ok(ctx: FingentContext) -> bool:
     out = ctx.get("validate") or {}
     return bool(out.get("ok"))
 
 
-def totals_mismatch(ctx: AgnesContext) -> bool:
+def totals_mismatch(ctx: FingentContext) -> bool:
     out = ctx.get("validate") or {}
     return bool(out) and not out.get("ok")

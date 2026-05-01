@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 
 
 _BANK = "512"
@@ -156,7 +156,7 @@ async def _invariant_5_paired_ap(conn, entry_id: int, accrual_link_id: int | Non
     return {"invariant": 5, "name": "paired_ap_zero", "ok": True}
 
 
-async def run(ctx: AgnesContext) -> dict[str, Any]:
+async def run(ctx: FingentContext) -> dict[str, Any]:
     """Run all five invariants over the entry posted by `post-entry`.
 
     If `post-entry` was skipped, return `{ok: True, skipped: True}` — there

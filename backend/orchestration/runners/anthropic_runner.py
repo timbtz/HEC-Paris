@@ -19,7 +19,7 @@ from .base import AgentResult, TokenUsage
 from ..prompt_hash import prompt_hash
 
 if TYPE_CHECKING:
-    from ..context import AgnesContext
+    from ..context import FingentContext
 
 try:  # Lazy-tolerant import so tests can monkey-patch without a key.
     import anthropic
@@ -116,7 +116,7 @@ class AnthropicRunner:
     async def run(
         self,
         *,
-        ctx: "AgnesContext",
+        ctx: "FingentContext",
         system: str,
         tools: list[dict],
         messages: list[dict],

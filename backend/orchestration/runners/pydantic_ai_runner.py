@@ -27,7 +27,7 @@ from .cerebras_impl import (
 from ..prompt_hash import prompt_hash
 
 if TYPE_CHECKING:
-    from ..context import AgnesContext
+    from ..context import FingentContext
 
 try:  # Lazy-tolerant import so unit tests without the SDK still collect.
     from openai import AsyncOpenAI
@@ -128,7 +128,7 @@ class PydanticAiRunner:
     async def run(
         self,
         *,
-        ctx: "AgnesContext",
+        ctx: "FingentContext",
         system: str,
         tools: list[dict],
         messages: list[dict],

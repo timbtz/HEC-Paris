@@ -1,13 +1,13 @@
 """Multiplicative confidence gate - compound math, missing-as-0.5, floor override."""
 from __future__ import annotations
 
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 from backend.orchestration.store.writes import write_tx
 from backend.orchestration.tools.confidence_gate import run
 
 
-def _ctx(store, *, node_outputs: dict) -> AgnesContext:
-    return AgnesContext(
+def _ctx(store, *, node_outputs: dict) -> FingentContext:
+    return FingentContext(
         run_id=1,
         pipeline_name="test-confidence-gate",
         trigger_source="manual",

@@ -102,7 +102,7 @@ The frontend is treated as a parallel work track that begins as soon as the SSE 
 **Phase 1 implementation (every file you will plug into):**
 
 - `backend/api/main.py` (47 lines) — FastAPI lifespan, `/healthz`. Mount your new routers here.
-- `backend/orchestration/context.py` (29 lines) — `AgnesContext` dataclass (`run_id`, `pipeline_name`, `trigger_source`, `trigger_payload`, `node_outputs`, `store`, `employee_id`, `metadata`). Use `ctx.get(node_id)` for upstream reads.
+- `backend/orchestration/context.py` (29 lines) — `FingentContext` dataclass (`run_id`, `pipeline_name`, `trigger_source`, `trigger_payload`, `node_outputs`, `store`, `employee_id`, `metadata`). Use `ctx.get(node_id)` for upstream reads.
 - `backend/orchestration/registries.py` (99 lines) — `register_tool/agent/runner/condition(key, dotted)` and `get_tool/agent/runner/condition(key)`. Tools and agents are referenced from YAML by their registry key; runners by name (`anthropic`).
 - `backend/orchestration/executor.py` (386 lines) — `execute_pipeline(pipeline_name, *, trigger_source, trigger_payload, store, employee_id=None, background=True, pipelines_dir=None) -> int`. Returns the new `pipeline_runs.id`. Use this from every webhook / upload handler. **Do not re-implement.**
 - `backend/orchestration/runners/base.py` (56 lines) — `AgentRunner` Protocol + `AgentResult` (frozen dataclass with `output`, `model`, `response_id`, `prompt_hash`, `alternatives`, `confidence`, `usage`, `latency_ms`, `finish_reason`, `temperature`, `seed`, `raw`).
@@ -455,7 +455,7 @@ Use information-dense keywords:
 
 ### Task 2 — UPDATE `.env.example` with Phase 2 envs
 
-- **IMPLEMENT**: Add `SWAN_CLIENT_ID`, `SWAN_CLIENT_SECRET`, `SWAN_OAUTH_URL=https://oauth.swan.io/oauth2/token`, `SWAN_GRAPHQL_URL=https://api.swan.io/sandbox-partner/graphql`, `SWAN_PROJECT_ID`, `SWAN_WEBHOOK_SECRET`, `STRIPE_WEBHOOK_SECRET` (placeholder for the verifier registry), `ANTHROPIC_API_KEY` (already there if Phase 1 set it; confirm), `AGNES_DATA_DIR=./data` (already there).
+- **IMPLEMENT**: Add `SWAN_CLIENT_ID`, `SWAN_CLIENT_SECRET`, `SWAN_OAUTH_URL=https://oauth.swan.io/oauth2/token`, `SWAN_GRAPHQL_URL=https://api.swan.io/sandbox-partner/graphql`, `SWAN_PROJECT_ID`, `SWAN_WEBHOOK_SECRET`, `STRIPE_WEBHOOK_SECRET` (placeholder for the verifier registry), `ANTHROPIC_API_KEY` (already there if Phase 1 set it; confirm), `FINGENT_DATA_DIR=./data` (already there).
 - **PATTERN**: Existing `.env.example` shape.
 - **IMPORTS**: N/A.
 - **GOTCHA**: Comments only — never commit real secrets. Add a top-of-file warning.

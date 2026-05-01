@@ -12,7 +12,7 @@ import base64
 from pathlib import Path
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 from ..registries import get_runner
 from ..runners.base import AgentResult
 from ..tools import wiki_reader as wiki_reader_tool
@@ -68,7 +68,7 @@ _SUBMIT_TOOL: dict[str, Any] = {
 }
 
 
-async def _load_document(ctx: AgnesContext, document_id: int) -> tuple[str, str]:
+async def _load_document(ctx: FingentContext, document_id: int) -> tuple[str, str]:
     """Return (blob_path, sha256) for a documents.id."""
     cur = await ctx.store.accounting.execute(
         "SELECT blob_path, sha256 FROM documents WHERE id = ?",
@@ -81,7 +81,7 @@ async def _load_document(ctx: AgnesContext, document_id: int) -> tuple[str, str]
     return row[0], row[1]
 
 
-async def run(ctx: AgnesContext) -> AgentResult:
+async def run(ctx: FingentContext) -> AgentResult:
     """Extract invoice fields from a PDF blob via Claude vision."""
     document_id = ctx.trigger_payload.get("document_id")
     if document_id is None:

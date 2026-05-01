@@ -1,12 +1,12 @@
-# Competitive Teardown — Agnes vs. the EU SME Finance Stack
+# Competitive Teardown — Fingent vs. the EU SME Finance Stack
 
 > *As of 2026-04-25. Sources cited inline. "Shipped & live" is distinguished from "announced / roadmap" throughout — Hg Catalyst's first filter.*
 
 ---
 
-## TL;DR — where each competitor stops, and where Agnes starts
+## TL;DR — where each competitor stops, and where Fingent starts
 
-| Layer | Pennylane | Qonto | Spendesk / Payhawk / Pleo | Ramp / Brex (US, EU-bound) | Sage Intacct (Hg-adjacent) | **Agnes** |
+| Layer | Pennylane | Qonto | Spendesk / Payhawk / Pleo | Ramp / Brex (US, EU-bound) | Sage Intacct (Hg-adjacent) | **Fingent** |
 |---|---|---|---|---|---|---|
 | Bank → ledger latency | sub-day, aggregator-polled | 3×/day batch sync to Pennylane | n/a (cards only) | sub-minute (US Treasury rails) | ERP-batch | **<5s, Swan webhook → posted JE** |
 | Native GL? | yes | **no** (sells Regate to accountants) | no | no | yes | **yes (3-DB, single-writer)** |
@@ -30,8 +30,8 @@ The honest read: **no single EU competitor combines a live ledger, transactional
 
 **The wedge against them.**
 - **Speed:** sub-5s vs. sub-day. Pennylane's CEO publicly conceded SME adoption hasn't accelerated — most growth is via accounting firms ([Maddyness](https://www.maddyness.com/uk/2026/01/29/pennylane-new-e175-million-funding-round-for-the-french-unicorn/)). The CFO is not their primary user; the accountant is.
-- **AI posture:** "AI-assisted" — Agnes ships agents that *execute* through a single `gl_poster.post` chokepoint with `propose → checkpoint → commit`.
-- **Decision trace:** not a product surface. Agnes makes it a join key on every journal line — the EU AI Act provenance story Pennylane will retrofit; we ship.
+- **AI posture:** "AI-assisted" — Fingent ships agents that *execute* through a single `gl_poster.post` chokepoint with `propose → checkpoint → commit`.
+- **Decision trace:** not a product surface. Fingent makes it a join key on every journal line — the EU AI Act provenance story Pennylane will retrofit; we ship.
 - **Per-employee budgets / AI-credit cost:** absent. Pure greenfield.
 
 **One-line framing.** *Pennylane gave the accountant a co-pilot. We give the SME founder an autonomous CFO.*
@@ -47,11 +47,11 @@ The honest read: **no single EU competitor combines a live ledger, transactional
 **Business posture.** Last priced: **€486M Series D, Jan 2022, €4.4B valuation** ([FintechFutures](https://www.fintechfutures.com/venture-capital-funding/french-fintech-qonto-secures-486m-series-d-funding-to-boost-european-growth)). Profitable since 2023, ~2,300 staff, expanding upstack via the credit license + Regate.
 
 **The wedge against them.**
-- **The 3×/day sync is the gap.** Qonto stops at "card was authorised"; Pennylane catches up three times a day. Agnes is the layer that closes that gap to <5 seconds and writes the journal entry, the budget decrement, and the audit trace in one transaction.
-- **Webhook surface.** Qonto's documented webhooks are narrow — onboarding events (`registrations.submitted`, `capital_deposit_*`), not a transaction stream ([docs.qonto.com](https://docs.qonto.com/api-reference/onboarding-api/webhooks/webhooks)). Swan, by contrast, gives us per-transaction events — which is exactly what Agnes is built on.
-- **AI breadth.** One narrow agent in production. Agnes ships counterparty resolution, GL classification, document extraction, period-close, and DD reports as a registry of named, swappable agents.
+- **The 3×/day sync is the gap.** Qonto stops at "card was authorised"; Pennylane catches up three times a day. Fingent is the layer that closes that gap to <5 seconds and writes the journal entry, the budget decrement, and the audit trace in one transaction.
+- **Webhook surface.** Qonto's documented webhooks are narrow — onboarding events (`registrations.submitted`, `capital_deposit_*`), not a transaction stream ([docs.qonto.com](https://docs.qonto.com/api-reference/onboarding-api/webhooks/webhooks)). Swan, by contrast, gives us per-transaction events — which is exactly what Fingent is built on.
+- **AI breadth.** One narrow agent in production. Fingent ships counterparty resolution, GL classification, document extraction, period-close, and DD reports as a registry of named, swappable agents.
 
-**Watch for collision.** Regate was a Pennylane competitor; the credit license lets Qonto move up the stack. The Pennylane × Qonto partnership is structurally fragile — Agnes is the agent layer above both.
+**Watch for collision.** Regate was a Pennylane competitor; the credit license lets Qonto move up the stack. The Pennylane × Qonto partnership is structurally fragile — Fingent is the agent layer above both.
 
 ---
 
@@ -65,9 +65,9 @@ The honest read: **no single EU competitor combines a live ledger, transactional
 | Decision trace | n/a | audit logs | n/a |
 | AI-API spend | n/a | n/a | n/a |
 
-**The shared structural gap.** None of the four document writing the budget decrement and the journal entry inside the same DB transaction. Two systems kept in sync — eventually consistent, exposed to drift at month-end. Agnes's `BEGIN IMMEDIATE` + `(decision, cost, employee)` triple under one commit appears net-new in EU mid-market. (Caveat: vendor-internal architecture isn't always public — "unknown" is the honest fallback for whether one of them quietly does it server-side.)
+**The shared structural gap.** None of the four document writing the budget decrement and the journal entry inside the same DB transaction. Two systems kept in sync — eventually consistent, exposed to drift at month-end. Fingent's `BEGIN IMMEDIATE` + `(decision, cost, employee)` triple under one commit appears net-new in EU mid-market. (Caveat: vendor-internal architecture isn't always public — "unknown" is the honest fallback for whether one of them quietly does it server-side.)
 
-**The wedge.** They sell a layer *above* the books and bolt it on through nightly reconciliation. Agnes makes the budget *be* the books.
+**The wedge.** They sell a layer *above* the books and bolt it on through nightly reconciliation. Fingent makes the budget *be* the books.
 
 ---
 
@@ -78,10 +78,10 @@ The honest read: **no single EU competitor combines a live ledger, transactional
 **Ramp.** Production AP agents — auto-coding, fraud, approvals, payment optimization, citing their work back for audit. The headline EU-relevant feature: **AI Spend Intelligence** (a.k.a. AI Token Spend Management). Token-level data pulled from Anthropic, OpenAI, OpenRouter, attributed by **team / project / model / use case** ([Ramp support](https://support.ramp.com/hc/en-us/articles/50665591644051-AI-Spend-Intelligence), [product page](https://ramp.com/ai-cost-monitoring)). Ramp **acquired Billhop (Stockholm/London) Mar 13, 2026** to get EEA + UK regulatory cover — direct EU customer onboarding now starting ([Tech.eu](https://tech.eu/2026/03/13/expense-management-startup-ramp-takes-on-rival-brex-with-european-acquisition/)).
 
 **The wedge against Ramp / Brex in EU.**
-- **Per-employee, not per-team.** Ramp's unit of attribution for AI spend is *team / project / model* — Agnes's is **employee × journal-line**. That's the cut a French CFO actually needs for payroll-attached accountability under URSSAF / DGFIP scrutiny.
-- **Native ledger, not bolt-on.** Ramp/Brex are corporate cards + spend that hand off to a separate accounting system. Agnes is the ledger.
-- **EU AI Act provenance native.** Ramp's "agents cite their work" is product copy; Agnes's `decision_traces` is a schema contract.
-- **EU posture.** Brex is post-acquisition under Capital One — strategic uncertainty for a French SME signing a 3-year contract. Ramp just landed via Billhop and is in onboard mode. Agnes is EU-native, Swan-rails, French-mandate-aware (PDP / PA path), and Anthropic-priced in micro-USD.
+- **Per-employee, not per-team.** Ramp's unit of attribution for AI spend is *team / project / model* — Fingent's is **employee × journal-line**. That's the cut a French CFO actually needs for payroll-attached accountability under URSSAF / DGFIP scrutiny.
+- **Native ledger, not bolt-on.** Ramp/Brex are corporate cards + spend that hand off to a separate accounting system. Fingent is the ledger.
+- **EU AI Act provenance native.** Ramp's "agents cite their work" is product copy; Fingent's `decision_traces` is a schema contract.
+- **EU posture.** Brex is post-acquisition under Capital One — strategic uncertainty for a French SME signing a 3-year contract. Ramp just landed via Billhop and is in onboard mode. Fingent is EU-native, Swan-rails, French-mandate-aware (PDP / PA path), and Anthropic-priced in micro-USD.
 
 ---
 
@@ -90,11 +90,11 @@ The honest read: **no single EU competitor combines a live ledger, transactional
 The most concrete agentic accounting stack in the EU-relevant universe is **Sage Intacct**. As of Nov 2025: **Close Automation GA in US/UK** (Close Workspace, Close Assistant, Subledger Reconciliation, Variance Analysis); Finance Intelligence Agent in early access US/UK from Dec 2025; Close, AP, Time, Assurance Agents already live ([Sage press](https://www.sage.com/en-us/news/press-releases/2025/11/sage-intacct-delivers-new-capabilities-that-transform-how-finance-teams-close/)). They also opened **AI Developer Solutions** so certified third parties can ship agents into Copilot ([Sage AI Developer Solutions](https://www.sage.com/en-us/news/press-releases/2025/11/sage-launches-ai-developer-solutions-to-accelerate-partner-led/)).
 
 **Wedge against Sage.**
-- **Different customer.** Sage is enterprise / upper-mid-market US/UK with multi-year ERP migrations. Agnes targets the 50–250-person EU scale-up where the CFO can install a SaaS in a weekend.
-- **Speed.** Sage runs ERP-batch close cycles. Agnes's entire architecture is webhook-first.
+- **Different customer.** Sage is enterprise / upper-mid-market US/UK with multi-year ERP migrations. Fingent targets the 50–250-person EU scale-up where the CFO can install a SaaS in a weekend.
+- **Speed.** Sage runs ERP-batch close cycles. Fingent's entire architecture is webhook-first.
 - **EU specificity.** Sage's GA is US/UK; the FR PDP path, the German XRechnung path, the EU AI Act trace — all of these are home turf for an EU-native product.
 
-**Watch.** Sage's developer marketplace + Serrala's acquisition of Cevinio (closed **Feb 6, 2026** — [Serrala](https://www.serrala.com/news/serrala-acquires-e-invoicing-and-accounts-payable-specialist-cevinio)) signal that the Hg-portfolio mid-market is consolidating fast. Agnes either ships standalone *or* pitches into a Catalyst-style portfolio embed inside Visma / Serrala / Cevinio.
+**Watch.** Sage's developer marketplace + Serrala's acquisition of Cevinio (closed **Feb 6, 2026** — [Serrala](https://www.serrala.com/news/serrala-acquires-e-invoicing-and-accounts-payable-specialist-cevinio)) signal that the Hg-portfolio mid-market is consolidating fast. Fingent either ships standalone *or* pitches into a Catalyst-style portfolio embed inside Visma / Serrala / Cevinio.
 
 ---
 
@@ -105,7 +105,7 @@ The most concrete agentic accounting stack in the EU-relevant universe is **Sage
 - **Cevinio / Serrala / Azets (Hg)** — Serrala consolidated Cevinio Feb 2026; named IDC MarketScape Leader for AI-Enabled Mid-Market Treasury 2025-2026 ([Serrala](https://www.serrala.com/news/serrala-leader-idc-marketscape-ai-enabled-midmarket-treasury-risk-management)). **Treasury / AP, not the GL spine.**
 - **Numeric** — $51M Series B Nov 2025 (IVP, Menlo, Founders Fund) ([PR Newswire](https://www.prnewswire.com/news-releases/numeric-raises-51m-series-b-expanding-from-close-management-to-comprehensive-finance-platform-302619774.html)). MCP-based custom agents, technical-accounting agent, flux-explanation. **US-anchored close-management; closest spiritual cousin in the agentic-FP&A space, but no live-ledger and no per-employee envelope.**
 - **Mosaic** — $18M Series A Apr 2026 (Radical Ventures), 5 of top-10 PE firms ([PR Newswire](https://www.prnewswire.com/news-releases/mosaic-raises-18m-series-a-to-build-ai-driven-operating-system-for-deal-makers-302749611.html)). Deal modeling, not bookkeeping.
-- **Big 4 (Deloitte Zora, PwC One, KPMG Workbench, EY)** — all shipping agentic stacks, but as **partner-led services, not productized self-serve DD packs**. The €50–150K mid-market DD pack is still labour-arbitraged. Agnes's DD-pack agent survives if it's a *productized* SaaS feature, not a consultancy service. ([Emerj](https://emerj.com/ai-in-the-accounting-big-four-comparing-deloitte-pwc-kpmg-and-ey/))
+- **Big 4 (Deloitte Zora, PwC One, KPMG Workbench, EY)** — all shipping agentic stacks, but as **partner-led services, not productized self-serve DD packs**. The €50–150K mid-market DD pack is still labour-arbitraged. Fingent's DD-pack agent survives if it's a *productized* SaaS feature, not a consultancy service. ([Emerj](https://emerj.com/ai-in-the-accounting-big-four-comparing-deloitte-pwc-kpmg-and-ey/))
 - **Trovata, Tesorio** — US-anchored treasury platforms; no concrete EU customer disclosures 2025-2026.
 
 ---
@@ -116,17 +116,17 @@ The most concrete agentic accounting stack in the EU-relevant universe is **Sage
 
 **There is no accounting-specific obligation** — accounting software is a *deployer* of GPAI, not a *provider*. But the *evidentiary regime* the Act creates (you must show how an automated decision was made) collides directly with how every competitor today logs agent activity: **side-channel JSON, opaque tool logs, "agents cite their work."** None expose `(journal_line_id, decision_id)` as a queryable contract.
 
-That makes provenance-as-a-join-key Agnes's most defensible differentiator *today* — and the one most likely to compress through 2027 as competitors retrofit. The window to plant a flag is roughly **12–18 months**.
+That makes provenance-as-a-join-key Fingent's most defensible differentiator *today* — and the one most likely to compress through 2027 as competitors retrofit. The window to plant a flag is roughly **12–18 months**.
 
 ---
 
-## 8. The Agnes feature combination — what nobody else has, in one paragraph
+## 8. The Fingent feature combination — what nobody else has, in one paragraph
 
 **Live ledger** (Swan webhook → posted JE in <5s) **+ per-employee budget envelopes written in the same `write_tx` as the journal entry** (no eventual consistency, no nightly reconciliation) **+ decision-trace as a first-class table joined to every journal line** (not a JSON sidecar, not "agents cite their work" in chat) **+ per-employee AI-API spend attribution at micro-USD precision** (not per-team / per-project — per-employee) **+ a YAML pipeline DSL with single-chokepoint posting through `gl_poster.post`** (so new event types ship as YAML + a tool, never executor surgery) **+ an EU-native rails posture** (Swan, French PDP path, AI Act provenance baked in).
 
 Pennylane has the customers and the ledger but not the agents. Qonto has the rails but not the books. Spendesk and Payhawk have the budgets but not the GL. Ramp and Brex have the agents but not the EU posture. Sage Intacct has the close automation but not the speed or the SME fit. Numeric has the close agents but not the live ledger. Big 4 have the reports but not the productisation.
 
-**Agnes is the combination.**
+**Fingent is the combination.**
 
 ---
 
@@ -135,7 +135,7 @@ Pennylane has the customers and the ledger but not the agents. Qonto has the rai
 Two phrases to drop or sharpen, given what the research turned up:
 
 1. **"First in Europe to ship live ledger."** Sharpen to: *"First in Europe to ship sub-5-second Swan-webhook → posted journal entry, with per-employee budget enforcement and decision-trace in the same DB transaction."* (Pennylane is webhook-out / aggregator-in; nobody else publishes a sub-5s claim.)
-2. **"Per-employee AI-API spend."** Acknowledge Ramp's **AI Spend Intelligence** — but specify that Ramp attributes per *team / project*, while Agnes attributes per **employee × journal-line**, joined to the GL. That distinction is real and defensible.
+2. **"Per-employee AI-API spend."** Acknowledge Ramp's **AI Spend Intelligence** — but specify that Ramp attributes per *team / project*, while Fingent attributes per **employee × journal-line**, joined to the GL. That distinction is real and defensible.
 
 ## Sources
 

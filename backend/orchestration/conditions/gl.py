@@ -6,9 +6,9 @@ on a miss; this condition gates the AI fallback agent.
 """
 from __future__ import annotations
 
-from ..context import AgnesContext
+from ..context import FingentContext
 
 
-def unclassified(ctx: AgnesContext) -> bool:
+def unclassified(ctx: FingentContext) -> bool:
     out = ctx.get("classify-gl-account") or {}
     return out.get("gl_account") is None

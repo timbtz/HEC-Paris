@@ -12,14 +12,14 @@ from types import SimpleNamespace
 
 import pytest
 
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 from backend.orchestration.runners import anthropic_runner
 from backend.orchestration.runners.anthropic_runner import AnthropicRunner
 from backend.orchestration.runners.base import AgentResult
 
 
-def _ctx(store) -> AgnesContext:
-    return AgnesContext(
+def _ctx(store) -> FingentContext:
+    return FingentContext(
         run_id=1,
         pipeline_name="t",
         trigger_source="manual",

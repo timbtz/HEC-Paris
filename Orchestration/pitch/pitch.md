@@ -1,4 +1,4 @@
-# Agnes — The Autonomous CFO
+# Fingent — The Autonomous CFO
 
 > *The first ledger in Europe where every cent — the euro you spent
 > AND the AI token used to book it — has an employee's name on it.*
@@ -20,7 +20,7 @@ nobody can answer *why* it was booked there. **Two:** they're billing
 your card. Last month Anthropic charged you €12,400 as a single
 supplier line. Who ordered it? Which feature? Which employee?
 
-Today nobody in Europe can answer that question. Agnes can.
+Today nobody in Europe can answer that question. Fingent can.
 
 ### 0:30–1:30 — The demo wedge (live)
 

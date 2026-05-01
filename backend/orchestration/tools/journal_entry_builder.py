@@ -17,7 +17,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 from ..store.writes import write_tx
 
 
@@ -73,7 +73,7 @@ def _vat_split(amount_cents: int, vat_rate_bp: int) -> tuple[int, int]:
 # ---------------------------------------------------------------------------
 # build_cash — Swan transaction → cash-basis journal entry
 # ---------------------------------------------------------------------------
-async def build_cash(ctx: AgnesContext) -> dict[str, Any]:
+async def build_cash(ctx: FingentContext) -> dict[str, Any]:
     """Build a cash-basis journal entry from a Swan transaction.
 
     Reads:
@@ -241,7 +241,7 @@ async def build_cash(ctx: AgnesContext) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # build_accrual — extracted invoice → accrual-basis journal entry
 # ---------------------------------------------------------------------------
-async def build_accrual(ctx: AgnesContext) -> dict[str, Any]:
+async def build_accrual(ctx: FingentContext) -> dict[str, Any]:
     """Build an accrual-basis entry from a document-extractor output.
 
     Reads:
@@ -309,7 +309,7 @@ async def build_accrual(ctx: AgnesContext) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # match_accrual — pair a SEPA-out with an earlier supplier accrual
 # ---------------------------------------------------------------------------
-async def match_accrual(ctx: AgnesContext) -> dict[str, Any]:
+async def match_accrual(ctx: FingentContext) -> dict[str, Any]:
     """For SEPA-out + supplier counterparty: find an unpaired accrual entry
     on the same counterparty whose AP credit equals the SEPA amount.
 
@@ -365,7 +365,7 @@ async def match_accrual(ctx: AgnesContext) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # find_original — locate the prior entry to reverse (Released / Canceled)
 # ---------------------------------------------------------------------------
-async def find_original(ctx: AgnesContext) -> dict[str, Any]:
+async def find_original(ctx: FingentContext) -> dict[str, Any]:
     """Locate the previously-posted journal entry that this Released/Canceled
     event should reverse. Keys off `swan_transaction_id` on the lines.
 
@@ -406,7 +406,7 @@ async def find_original(ctx: AgnesContext) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # build_reversal — flip Dr/Cr on every line of an existing entry
 # ---------------------------------------------------------------------------
-async def build_reversal(ctx: AgnesContext) -> dict[str, Any]:
+async def build_reversal(ctx: FingentContext) -> dict[str, Any]:
     """Build a reversal entry for the original found by `find-original-entry`.
 
     Each new line preserves `account_code`, `counterparty_id`,
@@ -469,7 +469,7 @@ async def build_reversal(ctx: AgnesContext) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # mark_reversed — flip the original entry's status to 'reversed'
 # ---------------------------------------------------------------------------
-async def mark_reversed(ctx: AgnesContext) -> dict[str, Any]:
+async def mark_reversed(ctx: FingentContext) -> dict[str, Any]:
     """After the reversal entry has been posted via `gl_poster`, flip the
     original's `status` from 'posted' to 'reversed'.
 

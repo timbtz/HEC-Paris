@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 
 // Generic EventSource hook with StrictMode-safe cleanup.
-// Agnes wire format: `data: {json}\n\n` with no `id:` or `event:` lines —
+// Fingent wire format: `data: {json}\n\n` with no `id:` or `event:` lines —
 // all messages dispatch as type "message", routed by `event_type` from JSON.
 export function useSSE<T>(
   url: string,

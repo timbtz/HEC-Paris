@@ -11,13 +11,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 
 
 _VAT_TOLERANCE_CENTS = 1
 
 
-async def validate_totals(ctx: AgnesContext) -> dict[str, Any]:
+async def validate_totals(ctx: FingentContext) -> dict[str, Any]:
     """Three-way check: items sum, subtotal+VAT, currency.
 
     1. `sum(item.amount_cents) == subtotal_cents`            (strict)

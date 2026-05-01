@@ -6,13 +6,13 @@ Source: PRD-AutonomousCFO §7.3 + §12 Phase 4.A.
 from __future__ import annotations
 
 from backend.orchestration.agents.gl_account_classifier_agent import run
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 from backend.orchestration.wiki.schema import WikiFrontmatter
 from backend.orchestration.wiki.writer import upsert_page
 
 
-def _ctx(store, *, node_outputs: dict | None = None) -> AgnesContext:
-    return AgnesContext(
+def _ctx(store, *, node_outputs: dict | None = None) -> FingentContext:
+    return FingentContext(
         run_id=42,
         pipeline_name="test-gl-wiki",
         trigger_source="manual",

@@ -10,7 +10,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from backend.orchestration.agents.anomaly_flag_agent import run as anomaly_run
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 
 
 async def test_anomaly_agent_returns_structured_output(store, fake_anthropic):
@@ -45,7 +45,7 @@ async def test_anomaly_agent_returns_structured_output(store, fake_anthropic):
         ),
     )
 
-    ctx = AgnesContext(
+    ctx = FingentContext(
         run_id=1,
         pipeline_name="period_close",
         trigger_source="test",

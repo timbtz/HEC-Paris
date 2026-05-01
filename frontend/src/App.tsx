@@ -25,7 +25,7 @@ export default function App() {
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <header className="bg-white border-b border-zinc-200 px-6 py-4">
         <div className="flex items-center justify-between">
-          <div className="font-bold text-xl">Agnes</div>
+          <div className="font-bold text-xl">Fingent</div>
           <div className="text-sm text-zinc-500">
             YAML-driven DAG executor · live demo
           </div>

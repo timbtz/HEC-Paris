@@ -22,7 +22,7 @@ from backend.orchestration.executor import wait_for_run
 
 
 # Tiny but valid-ish PDF byte string.
-_FAKE_PDF = b"%PDF-1.4\n%fake-agnes-test\n%%EOF\n"
+_FAKE_PDF = b"%PDF-1.4\n%fake-fingent-test\n%%EOF\n"
 
 
 @pytest_asyncio.fixture

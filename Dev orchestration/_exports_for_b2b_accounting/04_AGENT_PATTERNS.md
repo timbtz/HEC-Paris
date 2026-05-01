@@ -6,11 +6,11 @@ This is the most important file for the new project. The cache-warmer pattern in
 
 ## 1. The contract every tool and agent obeys
 
-### Tool — `def run(ctx: AgnesContext) -> dict`
+### Tool — `def run(ctx: FingentContext) -> dict`
 
 ```python
 # orchestration/tools/supplier_alternatives.py:12
-def run(ctx: AgnesContext) -> dict:
+def run(ctx: FingentContext) -> dict:
     payload = ctx.trigger_payload
     ingredient_name: str = payload.get("ingredient_name", "")
     ...
@@ -31,11 +31,11 @@ def run(ctx: AgnesContext) -> dict:
 - **Errors propagate as exceptions.** The executor catches them at `_run_node` (line 74), formats the traceback, and writes `node_failed`. Tools should *not* try/except internally unless they want to convert a failure into a structured result (see `_ingredient_resolver.resolve()` which catches and returns `{"resolution_failed": True}` so the next tool can branch on it).
 - **No global state.** Read DB paths from `ctx.enriched_db_path`. Open connections inline. Close them.
 
-### Agent — `async def run(ctx: AgnesContext) -> dict`
+### Agent — `async def run(ctx: FingentContext) -> dict`
 
 ```python
 # orchestration/agents/proactive_agent.py:31
-async def run(ctx: AgnesContext) -> dict:
+async def run(ctx: FingentContext) -> dict:
     opportunities = ctx.get("scan-opportunities", {}).get("opportunities", [])
     if not opportunities:
         return {"proposals": [], "count": 0}
@@ -89,7 +89,7 @@ async def run_adk_agent(agent: LlmAgent, payload: str, run_id: str) -> str:
 
 **Honest assessment for the new project: do not adopt ADK.**
 
-ADK is here primarily because the original Agnes implementation used Gemini and benefited from ADK's `google_search` tool wiring (see `search_sub_agent.py`, called by `research_agent.py:36`). It is *not* core to the orchestration model. The runner is 25 lines and does only three things:
+ADK is here primarily because the original Fingent implementation used Gemini and benefited from ADK's `google_search` tool wiring (see `search_sub_agent.py`, called by `research_agent.py:36`). It is *not* core to the orchestration model. The runner is 25 lines and does only three things:
 
 1. Create an `InMemoryRunner` per call (no session reuse — every invocation is a fresh session keyed by `run_id`).
 2. Send a single user message containing the JSON payload.
@@ -104,7 +104,7 @@ ADK is here primarily because the original Agnes implementation used Gemini and 
 
 The agent files (`reactive_agent.py`, `proactive_agent.py`) become thinner — no `LlmAgent` wrapper, just `_SYSTEM = "..."` + a call to the runner.
 
-There is also no schema validation on ADK outputs in Agnes. Every agent does `re.search(r"\[.*\]", raw, re.DOTALL)` or `re.search(r"\{.*\}", ...)` to pull JSON out of free-form text (e.g. `research_agent.py:58-67`). This is fragile. The new project should use Claude's native tool-calling for any structured output — define a tool with a JSON schema, force the model to call it, and read `tool_use.input` directly. Same pattern, no regex, no parse errors.
+There is also no schema validation on ADK outputs in Fingent. Every agent does `re.search(r"\[.*\]", raw, re.DOTALL)` or `re.search(r"\{.*\}", ...)` to pull JSON out of free-form text (e.g. `research_agent.py:58-67`). This is fragile. The new project should use Claude's native tool-calling for any structured output — define a tool with a JSON schema, force the model to call it, and read `tool_use.input` directly. Same pattern, no regex, no parse errors.
 
 ---
 
@@ -211,7 +211,7 @@ The pattern: **named constants at module level, with a comment explaining how th
 
 ---
 
-## 4. End-to-end cache-warmer flow — Agnes example, walked node by node
+## 4. End-to-end cache-warmer flow — Fingent example, walked node by node
 
 > **This is the section to internalize.** The new project's counterparty resolution is structurally identical.
 
@@ -234,7 +234,7 @@ YAML (`pipelines/supplier_fallout.yaml:8-10`):
 Tool body (`tools/supplier_alternatives.py:12-30`):
 
 ```python
-def run(ctx: AgnesContext) -> dict:
+def run(ctx: FingentContext) -> dict:
     payload = ctx.trigger_payload
     ingredient_name: str = payload.get("ingredient_name", "")
     resolution = resolve(ingredient_name, db_path=ctx.enriched_db_path)
@@ -280,7 +280,7 @@ When the deterministic path produces fewer than 3 results, this guard fires and 
 
 ### Step 4 — output is "schema-validated"
 
-In Agnes today, this is just `json.loads(m.group())` inside a try/except. **In the new project**, this is where Claude tool-calling earns its keep: define a tool with a JSON schema for the counterparty record, force the model to call it, and read `tool_use.input` directly. No regex, no parse errors.
+In Fingent today, this is just `json.loads(m.group())` inside a try/except. **In the new project**, this is where Claude tool-calling earns its keep: define a tool with a JSON schema for the counterparty record, force the model to call it, and read `tool_use.input` directly. No regex, no parse errors.
 
 ### Step 5 — written back as a confidence-scored cache row
 
@@ -298,11 +298,11 @@ def _stage_suppliers(suppliers, ingredient_name, db_path):
                         Related_IngredientId, Logged_At) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""", ...)
 ```
 
-**Honest gap:** in current Agnes, the writeback lands in `Agent_Log` (the audit table), not in `Ingredient_Canonical` itself. So the *next* time the same ingredient query arrives, the deterministic resolver still misses unless someone promotes the staged row. The new project must close this loop end-to-end: the agent's output should be written into `counterparties` (with its confidence and `match_method = "claude_agent"`) so the next occurrence resolves through stage 1 of the deterministic resolver. **This is the single highest-leverage fix when transferring this pattern.**
+**Honest gap:** in current Fingent, the writeback lands in `Agent_Log` (the audit table), not in `Ingredient_Canonical` itself. So the *next* time the same ingredient query arrives, the deterministic resolver still misses unless someone promotes the staged row. The new project must close this loop end-to-end: the agent's output should be written into `counterparties` (with its confidence and `match_method = "claude_agent"`) so the next occurrence resolves through stage 1 of the deterministic resolver. **This is the single highest-leverage fix when transferring this pattern.**
 
 ### Step 6 — next occurrence is deterministic
 
-Once `counterparties` (or in Agnes: `Ingredient_Canonical`) has the row, the next inbound query for the same identifier hits stage 1 — exact match, confidence 1.0, no LLM call. The cache is now warm for that entity. Aggregate behaviour: AI populates the cache for novel inputs; deterministic rules serve all subsequent traffic. Cost flatlines as the cache fills.
+Once `counterparties` (or in Fingent: `Ingredient_Canonical`) has the row, the next inbound query for the same identifier hits stage 1 — exact match, confidence 1.0, no LLM call. The cache is now warm for that entity. Aggregate behaviour: AI populates the cache for novel inputs; deterministic rules serve all subsequent traffic. Cost flatlines as the cache fills.
 
 ### Step 7 — downstream nodes consume
 

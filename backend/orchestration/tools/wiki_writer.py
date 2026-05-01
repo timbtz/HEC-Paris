@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 from ..store.writes import write_tx
 from ..wiki import upsert_page
 from ..wiki.schema import WikiFrontmatter
@@ -41,7 +41,7 @@ def _coerce_frontmatter(raw: Any) -> WikiFrontmatter:
 
 
 async def _enqueue_rule_change(
-    ctx: AgnesContext,
+    ctx: FingentContext,
     *,
     proposed_policy_path: str | None,
     body_md: str,
@@ -64,7 +64,7 @@ async def _enqueue_rule_change(
     return int(review_id)
 
 
-async def run(ctx: AgnesContext) -> dict[str, Any]:
+async def run(ctx: FingentContext) -> dict[str, Any]:
     """Pipeline-node entry point. Reads draft from `draft-post-mortem`."""
     draft = ctx.get("draft-post-mortem")
     if not isinstance(draft, dict):

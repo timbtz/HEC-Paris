@@ -6,7 +6,7 @@ This document catalogs the SQLite design that the new project (B2B accounting on
 
 ## 1. The two-database split
 
-Agnes runs against **two separate SQLite files**, joined only at runtime through `AgnesContext`:
+Fingent runs against **two separate SQLite files**, joined only at runtime through `FingentContext`:
 
 | File | Purpose | Lifecycle | Schema |
 |------|---------|-----------|--------|
@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS Refusal_Log (
 CREATE INDEX IF NOT EXISTS idx_refusal_canonical ON Refusal_Log(CanonicalId);
 ```
 
-The crucial fields are **`BlockingFactors`** (machine-readable JSON), **`UnblockHint`** (human-readable next step), and **`RunId`** linking back to the pipeline event log. This is the row the UI shows when it says "Agnes refused to recommend X — here's why and here's what would change the answer."
+The crucial fields are **`BlockingFactors`** (machine-readable JSON), **`UnblockHint`** (human-readable next step), and **`RunId`** linking back to the pipeline event log. This is the row the UI shows when it says "Fingent refused to recommend X — here's why and here's what would change the answer."
 
 **Claim citations** (`db_migrate_citation_refusal.py:12-23`):
 
@@ -190,14 +190,14 @@ UNIQUE(ChangeId, SnapshotDate, Route, DosageForm)     -- FDA_IID_Change_Log
 
 CHECK constraints enforce enum validity; UNIQUE composites enforce row-level idempotency on append. The new project's most important invariant is **balanced double-entry**: `SUM(debits) = SUM(credits)` per journal entry.
 
-**Honest gap:** Agnes does **not** use SQL triggers anywhere. The `SUM(debits) = SUM(credits)` invariant is something the new project will need to add itself. Two options:
+**Honest gap:** Fingent does **not** use SQL triggers anywhere. The `SUM(debits) = SUM(credits)` invariant is something the new project will need to add itself. Two options:
 
 1. **Trigger-based** — `CREATE TRIGGER` on `INSERT/UPDATE` of `journal_entry_lines` that re-aggregates and raises `RAISE(ABORT, ...)` if unbalanced. Atomic but harder to debug.
 2. **Application-level** — wrap journal-entry creation in a single transaction in Python that inserts the header + all lines + a balance assertion (`SELECT SUM(amount_cents) FROM journal_entry_lines WHERE entry_id=?` checked before commit). Easier to test, easier to surface the violation as a structured error to the caller.
 
 For a hackathon, the application-level option is faster to land and easier to explain. Add the trigger later as defense in depth.
 
-There is one place Agnes does a write-time invariant via Python: the `RefusalEngine` short-circuits when `compound_confidence < CONFIDENCE_FLOOR (0.50)` and refuses to write a recommendation (`reasoning/refusal_engine.py:23, 57-78`). The pattern — invariant enforced at the gate, not at the row — applies cleanly: a journal entry that fails the balance check is *refused*, not corrupted into the table.
+There is one place Fingent does a write-time invariant via Python: the `RefusalEngine` short-circuits when `compound_confidence < CONFIDENCE_FLOOR (0.50)` and refuses to write a recommendation (`reasoning/refusal_engine.py:23, 57-78`). The pattern — invariant enforced at the gate, not at the row — applies cleanly: a journal entry that fails the balance check is *refused*, not corrupted into the table.
 
 ---
 

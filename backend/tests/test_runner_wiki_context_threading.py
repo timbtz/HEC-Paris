@@ -12,14 +12,14 @@ from typing import Any
 
 import pytest
 
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 from backend.orchestration.runners import anthropic_runner, pydantic_ai_runner
 from backend.orchestration.runners.anthropic_runner import AnthropicRunner
 from backend.orchestration.runners.pydantic_ai_runner import PydanticAiRunner
 
 
-def _ctx(store) -> AgnesContext:
-    return AgnesContext(
+def _ctx(store) -> FingentContext:
+    return FingentContext(
         run_id=1,
         pipeline_name="test",
         trigger_source="manual",

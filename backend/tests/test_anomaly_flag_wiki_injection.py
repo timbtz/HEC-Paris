@@ -6,13 +6,13 @@ Source: plan §STEP-BY-STEP Task 14. The pipeline-name tag means a
 from __future__ import annotations
 
 from backend.orchestration.agents.anomaly_flag_agent import run
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 from backend.orchestration.wiki.schema import WikiFrontmatter
 from backend.orchestration.wiki.writer import upsert_page
 
 
-def _ctx(store, *, pipeline: str, node_outputs: dict | None = None) -> AgnesContext:
-    return AgnesContext(
+def _ctx(store, *, pipeline: str, node_outputs: dict | None = None) -> FingentContext:
+    return FingentContext(
         run_id=21,
         pipeline_name=pipeline,
         trigger_source="manual",

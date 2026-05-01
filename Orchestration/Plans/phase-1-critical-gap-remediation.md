@@ -76,7 +76,7 @@ The Phase A–F implementation is the source of truth for what exists. Before wr
   - §7.11 "The wedge query" — the SQL that must work after this plan lands
   - §10 "API Specification" — the inbound/internal endpoint contracts
   - §12 Phase D / Phase F bullets — what was supposed to be built
-- **`backend/orchestration/` (or wherever the executor lives)** — Why: discover the registry signatures, `AgnesContext` shape, and how runners receive `employee_id`.
+- **`backend/orchestration/` (or wherever the executor lives)** — Why: discover the registry signatures, `FingentContext` shape, and how runners receive `employee_id`.
 - **`backend/api/swan_webhook.py` (or equivalent)** — Why: this is where employee resolution must happen *before* `executor.run(...)`.
 - **`backend/pipelines/*.yaml`** — Why: the pipelines you will edit. Confirm node IDs and `depends_on` shape before adding nodes.
 - **`backend/tools/budget_envelope.py` (or equivalent)** — Why: confirm the existing signature; do not change it if Phase D shipped one.

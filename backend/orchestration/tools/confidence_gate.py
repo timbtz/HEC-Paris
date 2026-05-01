@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 
 
 # The set of nodes whose confidence we fold into the gate. Includes both the
@@ -48,7 +48,7 @@ def _confidence_of(out: Any) -> float | None:
     return None
 
 
-async def _read_floor(ctx: AgnesContext) -> float:
+async def _read_floor(ctx: FingentContext) -> float:
     cur = await ctx.store.accounting.execute(
         "SELECT floor FROM confidence_thresholds "
         "WHERE scope = 'global' "
@@ -61,7 +61,7 @@ async def _read_floor(ctx: AgnesContext) -> float:
     return float(row[0])
 
 
-async def run(ctx: AgnesContext) -> dict[str, Any]:
+async def run(ctx: FingentContext) -> dict[str, Any]:
     contributing: list[tuple[str, float | None]] = []
     for node_id in _NODE_IDS:
         if node_id not in ctx.node_outputs:

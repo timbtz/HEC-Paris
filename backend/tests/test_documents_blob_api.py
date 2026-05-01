@@ -18,7 +18,7 @@ from backend.api.documents import router as documents_router
 from backend.orchestration.store.writes import write_tx
 
 
-_FAKE_PDF = b"%PDF-1.4\n%fake-agnes-test\n%%EOF\n"
+_FAKE_PDF = b"%PDF-1.4\n%fake-fingent-test\n%%EOF\n"
 _FAKE_PNG = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDRfake"
 _FAKE_TXT = b"plain text body\n"
 

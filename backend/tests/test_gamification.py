@@ -160,7 +160,7 @@ async def test_manual_completion_then_approve(client, store):
     resp = await client.post(
         "/gamification/completions",
         json={"task_id": 1, "note": "boom"},
-        headers={"x-agnes-author": "marie@hec.example"},
+        headers={"x-fingent-author": "marie@hec.example"},
     )
     assert resp.status_code == 200, resp.text
     completion_id = resp.json()["id"]
@@ -168,14 +168,14 @@ async def test_manual_completion_then_approve(client, store):
     # Marie can't approve her own (not a manager).
     resp = await client.post(
         f"/gamification/completions/{completion_id}/approve",
-        headers={"x-agnes-author": "marie@hec.example"},
+        headers={"x-fingent-author": "marie@hec.example"},
     )
     assert resp.status_code == 403
 
     # Tim approves.
     resp = await client.post(
         f"/gamification/completions/{completion_id}/approve",
-        headers={"x-agnes-author": "tim@hec.example"},
+        headers={"x-fingent-author": "tim@hec.example"},
     )
     assert resp.status_code == 200
     body = resp.json()
@@ -190,16 +190,16 @@ async def test_double_approve_returns_409(client):
     resp = await client.post(
         "/gamification/completions",
         json={"task_id": 2},
-        headers={"x-agnes-author": "marie@hec.example"},
+        headers={"x-fingent-author": "marie@hec.example"},
     )
     cid = resp.json()["id"]
     await client.post(
         f"/gamification/completions/{cid}/approve",
-        headers={"x-agnes-author": "tim@hec.example"},
+        headers={"x-fingent-author": "tim@hec.example"},
     )
     resp = await client.post(
         f"/gamification/completions/{cid}/approve",
-        headers={"x-agnes-author": "tim@hec.example"},
+        headers={"x-fingent-author": "tim@hec.example"},
     )
     assert resp.status_code == 409
 
@@ -222,7 +222,7 @@ async def test_redemption_locks_then_refunds_on_reject(client, store):
     resp = await client.post(
         "/gamification/redemptions",
         json={"reward_id": 1},
-        headers={"x-agnes-author": "marie@hec.example"},
+        headers={"x-fingent-author": "marie@hec.example"},
     )
     assert resp.status_code == 200, resp.text
     rid = resp.json()["id"]
@@ -234,7 +234,7 @@ async def test_redemption_locks_then_refunds_on_reject(client, store):
     # Tim rejects → refund.
     resp = await client.post(
         f"/gamification/redemptions/{rid}/reject",
-        headers={"x-agnes-author": "tim@hec.example"},
+        headers={"x-fingent-author": "tim@hec.example"},
     )
     assert resp.status_code == 200
     bal_after = await coin_balance(store.audit, 2)
@@ -246,7 +246,7 @@ async def test_redemption_insufficient_coins(client):
     resp = await client.post(
         "/gamification/redemptions",
         json={"reward_id": 1},
-        headers={"x-agnes-author": "marie@hec.example"},
+        headers={"x-fingent-author": "marie@hec.example"},
     )
     assert resp.status_code == 409
 
@@ -290,7 +290,7 @@ async def test_coin_adjustment_credits_then_blocks_negative(client, store):
     resp = await client.post(
         "/gamification/coin_adjustments",
         json={"employee_id": 2, "amount": 250, "reason": "bonus"},
-        headers={"x-agnes-author": "tim@hec.example"},
+        headers={"x-fingent-author": "tim@hec.example"},
     )
     assert resp.status_code == 200
     assert resp.json()["new_balance"] == 250
@@ -299,7 +299,7 @@ async def test_coin_adjustment_credits_then_blocks_negative(client, store):
     resp = await client.post(
         "/gamification/coin_adjustments",
         json={"employee_id": 2, "amount": -1000, "reason": "clawback"},
-        headers={"x-agnes-author": "tim@hec.example"},
+        headers={"x-fingent-author": "tim@hec.example"},
     )
     assert resp.status_code == 409
 
@@ -308,6 +308,6 @@ async def test_non_manager_cannot_adjust(client):
     resp = await client.post(
         "/gamification/coin_adjustments",
         json={"employee_id": 2, "amount": 100},
-        headers={"x-agnes-author": "marie@hec.example"},
+        headers={"x-fingent-author": "marie@hec.example"},
     )
     assert resp.status_code == 403

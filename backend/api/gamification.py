@@ -5,7 +5,7 @@ single-tenant flavour. Schema lives in `audit.db` (migration
 audit/0005_gamification). Auto-credit hook lives in
 `backend.orchestration.audit.propose_checkpoint_commit`.
 
-Auth: same chokepoint as wiki — `x-agnes-author` header carries the
+Auth: same chokepoint as wiki — `x-fingent-author` header carries the
 acting employee email; manager-only routes look up `employees.is_manager`.
 There is no JWT/session — single-tenant + small team = the lightest
 possible auth seam.
@@ -58,8 +58,8 @@ router = APIRouter(prefix="/gamification")
 
 
 def _author_email(request: Request) -> str | None:
-    """`x-agnes-author` header. Same convention as wiki write surface."""
-    return request.headers.get("x-agnes-author")
+    """`x-fingent-author` header. Same convention as wiki write surface."""
+    return request.headers.get("x-fingent-author")
 
 
 async def _require_manager(request: Request) -> tuple[str, int]:
@@ -83,7 +83,7 @@ async def _require_acting_employee(request: Request) -> tuple[str, int]:
     if eid is None:
         raise HTTPException(
             status_code=400,
-            detail="x-agnes-author header missing or unknown",
+            detail="x-fingent-author header missing or unknown",
         )
     assert email is not None
     return email, eid

@@ -136,10 +136,10 @@ async def test_period_close_emits_report_and_does_not_post(
 
 async def test_gl_poster_blocks_post_into_closed_period(store):
     """A post into the seeded `2026-Q1` (closed) must raise RuntimeError."""
-    from backend.orchestration.context import AgnesContext
+    from backend.orchestration.context import FingentContext
     from backend.orchestration.tools import gl_poster
 
-    ctx = AgnesContext(
+    ctx = FingentContext(
         run_id=1,
         pipeline_name="test",
         trigger_source="test",
@@ -167,10 +167,10 @@ async def test_gl_poster_blocks_post_into_closed_period(store):
 
 async def test_gl_poster_allows_post_into_open_period(store):
     """A post into a `closing` or `open` period MUST succeed."""
-    from backend.orchestration.context import AgnesContext
+    from backend.orchestration.context import FingentContext
     from backend.orchestration.tools import gl_poster
 
-    ctx = AgnesContext(
+    ctx = FingentContext(
         run_id=1,
         pipeline_name="test",
         trigger_source="test",

@@ -14,8 +14,8 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, FileText } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { useDagRun } from "@/hooks/useDagRun";
-import { DagViewer } from "@/components/agnes/DagViewer";
-import { LiveDot, MicroUsd } from "@/components/agnes/primitives";
+import { DagViewer } from "@/components/fingent/DagViewer";
+import { LiveDot, MicroUsd } from "@/components/fingent/primitives";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -75,8 +75,8 @@ export default function RunDagPage() {
 
   useEffect(() => {
     document.title = pipelineName
-      ? `Run #${runId} · ${pipelineName} · Agnes`
-      : `Run #${runId} · Agnes`;
+      ? `Run #${runId} · ${pipelineName} · Fingent`
+      : `Run #${runId} · Fingent`;
   }, [runId, pipelineName]);
 
   const title = useMemo(() => pipelineName ?? "loading…", [pipelineName]);

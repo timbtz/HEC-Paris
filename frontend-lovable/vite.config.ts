@@ -8,12 +8,12 @@ import { componentTagger } from "lovable-tagger";
 // /envelopes, /review, /reports, /dashboard, /employees, /period_reports, /wiki.
 // Lovable's src/lib/api.ts uses `VITE_API_BASE_URL` to form absolute fetch URLs;
 // we point it at this dev server origin (see .env.local) so requests come back
-// here and get proxied to the local Agnes backend.
+// here and get proxied to the local Fingent backend.
 //
 // Default port is 8001 because :8000 is held by another service on this dev
-// box. Override with `AGNES_BACKEND_URL=http://127.0.0.1:<port> npm run dev`
+// box. Override with `FINGENT_BACKEND_URL=http://127.0.0.1:<port> npm run dev`
 // if you've started uvicorn on a different port.
-const BACKEND = process.env.AGNES_BACKEND_URL ?? "http://127.0.0.1:8001";
+const BACKEND = process.env.FINGENT_BACKEND_URL ?? "http://127.0.0.1:8001";
 
 // Some backend prefixes overlap with React Router routes (e.g. /runs, /wiki,
 // /reports). On a hard reload of `/wiki` the browser sends a document

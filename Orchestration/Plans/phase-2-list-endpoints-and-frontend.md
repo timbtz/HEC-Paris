@@ -21,7 +21,7 @@ The front-end is the only remaining Phase 2 deliverable; the two GETs unblock it
 
 ## User Story
 
-As an engineer demoing Agnes to hackathon judges
+As an engineer demoing Fingent to hackathon judges
 I want a live dashboard that shows three employees' envelope rings, the live ledger, the trace drawer, and the review queue
 So that the wedge query ("Marie spent €X on AI tokens this month, here's why") is *visible* on stage in under five seconds, not just runnable as SQL.
 
@@ -144,9 +144,9 @@ frontend/
 
 #### Reference docs in this repo (provided by user; partially inaccurate)
 
-- **`Dev orchestration/tech framework/REF-FASTAPI-BACKEND.md`** — written for the HappyRobot project. **USE:** lifespan pattern (lines 31–82), Pydantic v2 `@field_validator`+`@classmethod` shape (276–360), CORS gotcha (line 84). **IGNORE:** `compile_worker` / `pipeline_scheduler` / wiki / drafts / approval / `state.json` / systemd / `subprocess.run` (lines 88–271, 406–800) — irrelevant to Agnes. Agnes uses `app.state.store` (multi-DB), not `app.state.db`.
+- **`Dev orchestration/tech framework/REF-FASTAPI-BACKEND.md`** — written for the HappyRobot project. **USE:** lifespan pattern (lines 31–82), Pydantic v2 `@field_validator`+`@classmethod` shape (276–360), CORS gotcha (line 84). **IGNORE:** `compile_worker` / `pipeline_scheduler` / wiki / drafts / approval / `state.json` / systemd / `subprocess.run` (lines 88–271, 406–800) — irrelevant to Fingent. Fingent uses `app.state.store` (multi-DB), not `app.state.db`.
 
-- **`Dev orchestration/tech framework/REF-SSE-STREAMING-FASTAPI.md`** — also HappyRobot, **but the bus design (Section 2) is what `event_bus.py` already implements**. **USE:** failure-modes table (Section 7), CORS-for-SSE notes (Section 6 — `Last-Event-ID` only matters if reconnect dedup is added; we are not adding it). **IGNORE:** Section 3 (`write_event` hook — Agnes already publishes), Section 4 endpoint code (Agnes uses **15s heartbeats not 30s**, **no `id:` lines, no `event:` lines, no replay, no Last-Event-ID**), Section 5 Alpine.js (we use React), Section 8 HappyRobot agent names. **DO NOT** retrofit the doc's `id:`/`event:` framing — Agnes's wire format is locked in by `test_dashboard_sse.py`.
+- **`Dev orchestration/tech framework/REF-SSE-STREAMING-FASTAPI.md`** — also HappyRobot, **but the bus design (Section 2) is what `event_bus.py` already implements**. **USE:** failure-modes table (Section 7), CORS-for-SSE notes (Section 6 — `Last-Event-ID` only matters if reconnect dedup is added; we are not adding it). **IGNORE:** Section 3 (`write_event` hook — Fingent already publishes), Section 4 endpoint code (Fingent uses **15s heartbeats not 30s**, **no `id:` lines, no `event:` lines, no replay, no Last-Event-ID**), Section 5 Alpine.js (we use React), Section 8 HappyRobot agent names. **DO NOT** retrofit the doc's `id:`/`event:` framing — Fingent's wire format is locked in by `test_dashboard_sse.py`.
 
 - **`Dev orchestration/_exports_for_b2b_accounting/`** — six markdown files; relevant ones:
   - `01_ORCHESTRATION_REFERENCE.md` §1c — executor event sequence (`pipeline_started → node_started → node_completed → ... → pipeline_completed`). The per-run progress overlay maps `node_id` → human label using the codebase node ids (`fetch_transaction`, `resolve_counterparty`, `classify_gl`, `build_entry`, `post_entry`, `decrement_envelope`, `gate_confidence`, `enqueue_review`, etc.). Read the actual pipeline YAML files in `backend/orchestration/pipelines/` to copy real node ids — don't make them up.
@@ -171,7 +171,7 @@ frontend/
   - Gotcha: dynamic class strings (`bg-[${color}]`) break HMR cache invalidation (tailwindlabs/tailwindcss#17260) — **use static class lookups**.
 - [Vite — Server Options (proxy)](https://vite.dev/config/server-options) — `server.proxy` config, exact object shape.
   - Why: the frontend dev server must proxy every backend route; the relevant subset is listed in Task 8 below.
-- [MDN — EventSource](https://developer.mozilla.org/en-US/docs/Web/API/EventSource) — auto-reconnect, `onmessage` vs `addEventListener`. Agnes's wire format (no `event:` line) means **all messages dispatch as type `"message"` and use `onmessage`**.
+- [MDN — EventSource](https://developer.mozilla.org/en-US/docs/Web/API/EventSource) — auto-reconnect, `onmessage` vs `addEventListener`. Fingent's wire format (no `event:` line) means **all messages dispatch as type `"message"` and use `onmessage`**.
 - [MDN — AbortSignal.timeout()](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal/timeout_static) — supported in modern browsers; used for upload timeout.
 - [Zustand v5 docs](https://github.com/pmndrs/zustand) — v5 dropped `equalityFn` arg; for shallow-equal, import `useShallow` from `zustand/react/shallow`.
   - Why: store API change vs older blog posts.
@@ -232,7 +232,7 @@ apply: (ev) => set((s) => {
   }
 })
 ```
-**Note on event names**: Agnes uses **dotted** event names (`ledger.entry_posted`, `envelope.decremented`), not underscored. Match exactly — TypeScript discriminated unions are case-sensitive.
+**Note on event names**: Fingent uses **dotted** event names (`ledger.entry_posted`, `envelope.decremented`), not underscored. Match exactly — TypeScript discriminated unions are case-sensitive.
 
 **Frontend: EventSource hook with StrictMode-safe cleanup**:
 ```ts
@@ -1776,7 +1776,7 @@ Use information-dense keywords: **CREATE** / **UPDATE** / **ADD** / **REMOVE** /
       <div className="min-h-screen bg-zinc-50 text-zinc-900">
         <header className="bg-white border-b border-zinc-200 px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="font-bold text-xl">Agnes</div>
+            <div className="font-bold text-xl">Fingent</div>
             <div className="text-sm text-zinc-500">YAML-driven DAG executor · live demo</div>
           </div>
         </header>
@@ -1810,8 +1810,8 @@ Use information-dense keywords: **CREATE** / **UPDATE** / **ADD** / **REMOVE** /
 
 ### Task 26 — UPDATE `frontend/index.html` — set the title
 
-- **IMPLEMENT**: Replace the default `<title>Vite + React + TS</title>` with `<title>Agnes</title>`.
-- **VALIDATE**: Browser tab reads "Agnes".
+- **IMPLEMENT**: Replace the default `<title>Vite + React + TS</title>` with `<title>Fingent</title>`.
+- **VALIDATE**: Browser tab reads "Fingent".
 
 ### Task 27 — RUN full validation suite
 
@@ -1888,7 +1888,7 @@ Per `CLAUDE.md`, run the full suite via Bash with `run_in_background: true` and 
 
 ```bash
 cd "/home/developer/Projects/HEC Paris"
-AGNES_DATA_DIR=./data uvicorn backend.api.main:app --workers 1 --port 8000 &
+FINGENT_DATA_DIR=./data uvicorn backend.api.main:app --workers 1 --port 8000 &
 SERVER_PID=$!
 sleep 2
 
@@ -1919,7 +1919,7 @@ Per the TESTING STRATEGY → Manual section above. Run **twice in a row** on a f
 ```bash
 # Terminal 1: backend
 cd "/home/developer/Projects/HEC Paris"
-AGNES_DATA_DIR=./data uvicorn backend.api.main:app --workers 1 --port 8000
+FINGENT_DATA_DIR=./data uvicorn backend.api.main:app --workers 1 --port 8000
 
 # Terminal 2: frontend
 cd "/home/developer/Projects/HEC Paris/frontend"
@@ -1992,12 +1992,12 @@ If the temptation arises to add any of these "while I'm in here," resist — out
 
 ### On the SSE wire format
 
-Agnes's existing SSE wire format is locked-in:
+Fingent's existing SSE wire format is locked-in:
 - `data: {json}\n\n` — single line per event, no `id:`, no `event:`.
 - `: heartbeat\n\n` every **15 seconds**.
 - Per-run stream terminates after `pipeline_completed` or `pipeline_failed`; dashboard stream is long-lived.
 
-The `REF-SSE-STREAMING-FASTAPI.md` reference describes a **richer** wire format (`id:` + `event:` + 30s heartbeat + 60s grace + `Last-Event-ID` reconnect dedup). **Do not retrofit that onto Agnes.** The frontend's `useSSE` hook uses `onmessage` (not `addEventListener('node_started', ...)`) precisely because the existing wire format has no `event:` line.
+The `REF-SSE-STREAMING-FASTAPI.md` reference describes a **richer** wire format (`id:` + `event:` + 30s heartbeat + 60s grace + `Last-Event-ID` reconnect dedup). **Do not retrofit that onto Fingent.** The frontend's `useSSE` hook uses `onmessage` (not `addEventListener('node_started', ...)`) precisely because the existing wire format has no `event:` line.
 
 ### On money safety
 

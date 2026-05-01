@@ -14,7 +14,7 @@ import json
 import os
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 from ..store.writes import write_tx
 from ..swan.graphql import SwanGraphQLClient
 from ..swan.oauth import SwanOAuthClient
@@ -65,7 +65,7 @@ def _coerce_amount_cents(amount: Any) -> int:
 
 
 async def _persist_transaction(
-    ctx: AgnesContext,
+    ctx: FingentContext,
     tx: dict[str, Any],
     *,
     swan_event_id: str,
@@ -118,7 +118,7 @@ async def _persist_transaction(
 
 
 async def _read_local_transaction(
-    ctx: AgnesContext, tx_id: str
+    ctx: FingentContext, tx_id: str
 ) -> dict[str, Any] | None:
     """Read a previously-persisted transaction from `accounting.swan_transactions`.
 
@@ -140,7 +140,7 @@ async def _read_local_transaction(
     return parsed if isinstance(parsed, dict) else None
 
 
-async def fetch_transaction(ctx: AgnesContext) -> dict[str, Any]:
+async def fetch_transaction(ctx: FingentContext) -> dict[str, Any]:
     """Re-query Swan for the canonical transaction state.
 
     Reads `tx_id` from the trigger payload (`resourceId` is Swan's webhook
@@ -162,18 +162,18 @@ async def fetch_transaction(ctx: AgnesContext) -> dict[str, Any]:
 
     swan_event_id = payload.get("eventId") or tx_id
 
-    # Demo / replay mode: opt in via `AGNES_SWAN_LOCAL_REPLAY=1`. Reads
+    # Demo / replay mode: opt in via `FINGENT_SWAN_LOCAL_REPLAY=1`. Reads
     # from the locally-persisted row (seed migration 0006) and skips the
     # network. Production / CI never sets this, preserving the canonical
     # re-query behavior.
-    if os.environ.get("AGNES_SWAN_LOCAL_REPLAY") == "1":
+    if os.environ.get("FINGENT_SWAN_LOCAL_REPLAY") == "1":
         local = await _read_local_transaction(ctx, tx_id)
         if local is not None:
             out = dict(local)
             out["__local_id"] = tx_id
             return out
         raise LookupError(
-            f"fetch_transaction: AGNES_SWAN_LOCAL_REPLAY=1 but no local row for {tx_id}"
+            f"fetch_transaction: FINGENT_SWAN_LOCAL_REPLAY=1 but no local row for {tx_id}"
         )
 
     client = _get_client()
@@ -186,7 +186,7 @@ async def fetch_transaction(ctx: AgnesContext) -> dict[str, Any]:
     return out
 
 
-async def fetch_account(ctx: AgnesContext) -> dict[str, Any]:
+async def fetch_account(ctx: FingentContext) -> dict[str, Any]:
     """Re-query Swan for the canonical account state.
 
     Prefers `fetch-transaction.account.id` (chained pipeline) and falls

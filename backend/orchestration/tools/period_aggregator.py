@@ -11,10 +11,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 
 
-async def _resolve_period(ctx: AgnesContext) -> dict[str, Any]:
+async def _resolve_period(ctx: FingentContext) -> dict[str, Any]:
     """Look up the period row from `accounting_periods`.
 
     Reads `period_code` from `ctx.trigger_payload`. If the payload does
@@ -62,7 +62,7 @@ async def _resolve_period(ctx: AgnesContext) -> dict[str, Any]:
     }
 
 
-def _basis_for(ctx: AgnesContext) -> str:
+def _basis_for(ctx: FingentContext) -> str:
     """Closing basis for this run.
 
     Reads `basis` from `ctx.trigger_payload` (whitelist `accrual`/`cash`).
@@ -77,7 +77,7 @@ def _basis_for(ctx: AgnesContext) -> str:
     return basis
 
 
-async def compute_trial_balance(ctx: AgnesContext) -> dict[str, Any]:
+async def compute_trial_balance(ctx: FingentContext) -> dict[str, Any]:
     """Trial balance for the closing period.
 
     Defaults to `accrual` basis; trigger_payload may override with
@@ -132,7 +132,7 @@ async def compute_trial_balance(ctx: AgnesContext) -> dict[str, Any]:
     }
 
 
-async def compute_open_entries(ctx: AgnesContext) -> dict[str, Any]:
+async def compute_open_entries(ctx: FingentContext) -> dict[str, Any]:
     """List unpaired accrual entries inside the closing period.
 
     Always queries `accrual` basis — open entries are by construction an
@@ -169,7 +169,7 @@ async def compute_open_entries(ctx: AgnesContext) -> dict[str, Any]:
     }
 
 
-async def summarize_period(ctx: AgnesContext) -> dict[str, Any]:
+async def summarize_period(ctx: FingentContext) -> dict[str, Any]:
     """Final aggregator — bundles upstream node outputs for `report_renderer`.
 
     Pulls trial balance, open entries, anomalies (from `flag-anomalies`),

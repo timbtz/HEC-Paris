@@ -96,7 +96,7 @@ def _patch_httpx_to_app(monkeypatch, app: FastAPI) -> None:
 
 async def test_replay_iterates_and_posts(monkeypatch, store, app, tmp_path):
     monkeypatch.setenv("SWAN_WEBHOOK_SECRET", "")
-    monkeypatch.setenv("AGNES_SWAN_LOCAL_REPLAY", "1")
+    monkeypatch.setenv("FINGENT_SWAN_LOCAL_REPLAY", "1")
     monkeypatch.delenv("SWAN_CLIENT_ID", raising=False)
     _patch_httpx_to_app(monkeypatch, app)
     await _trim_swan_transactions(store)
@@ -116,7 +116,7 @@ async def test_replay_iterates_and_posts(monkeypatch, store, app, tmp_path):
 
 async def test_replay_is_idempotent(monkeypatch, store, app, tmp_path):
     monkeypatch.setenv("SWAN_WEBHOOK_SECRET", "")
-    monkeypatch.setenv("AGNES_SWAN_LOCAL_REPLAY", "1")
+    monkeypatch.setenv("FINGENT_SWAN_LOCAL_REPLAY", "1")
     monkeypatch.delenv("SWAN_CLIENT_ID", raising=False)
     _patch_httpx_to_app(monkeypatch, app)
     await _trim_swan_transactions(store)

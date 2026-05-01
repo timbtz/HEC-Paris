@@ -27,7 +27,7 @@ from typing import Any, TYPE_CHECKING
 from . import audit as audit_mod
 from . import cache as cache_mod
 from . import event_bus
-from .context import AgnesContext
+from .context import FingentContext
 from .cost import COST_TABLE_MICRO_USD, micro_usd
 from .dag import topological_layers
 from .registries import get_agent, get_condition, get_runner, get_tool
@@ -88,7 +88,7 @@ async def execute_pipeline(
         employee_id=employee_id,
     )
 
-    ctx = AgnesContext(
+    ctx = FingentContext(
         run_id=run_id,
         pipeline_name=pipeline.name,
         trigger_source=trigger_source,
@@ -119,7 +119,7 @@ async def wait_for_run(run_id: int) -> None:
 # Orchestrator loop
 # --------------------------------------------------------------------------- #
 
-async def _execute(ctx: AgnesContext, pipeline: Pipeline) -> None:
+async def _execute(ctx: FingentContext, pipeline: Pipeline) -> None:
     await write_event(ctx, "pipeline_started", None,
                       {"pipeline_name": pipeline.name, "version": pipeline.version})
     try:
@@ -180,7 +180,7 @@ async def _execute(ctx: AgnesContext, pipeline: Pipeline) -> None:
 # Per-node wrapper
 # --------------------------------------------------------------------------- #
 
-async def _run_node(node: PipelineNode, ctx: AgnesContext) -> _NodeOutcome:
+async def _run_node(node: PipelineNode, ctx: FingentContext) -> _NodeOutcome:
     start = time.monotonic()
     try:
         # `when:` short-circuit
@@ -244,7 +244,7 @@ async def _run_node(node: PipelineNode, ctx: AgnesContext) -> _NodeOutcome:
         )
 
 
-async def _dispatch_tool(node: PipelineNode, ctx: AgnesContext) -> Any:
+async def _dispatch_tool(node: PipelineNode, ctx: FingentContext) -> Any:
     fn = get_tool(node.tool)  # type: ignore[arg-type]
     if asyncio.iscoroutinefunction(fn):
         return await fn(ctx)
@@ -252,7 +252,7 @@ async def _dispatch_tool(node: PipelineNode, ctx: AgnesContext) -> Any:
     return await loop.run_in_executor(None, fn, ctx)
 
 
-async def _dispatch_agent(node: PipelineNode, ctx: AgnesContext) -> Any:
+async def _dispatch_agent(node: PipelineNode, ctx: FingentContext) -> Any:
     """Resolve agent + runner, call agent (which calls runner), then audit."""
     agent_fn = get_agent(node.agent)  # type: ignore[arg-type]
     if not asyncio.iscoroutinefunction(agent_fn):
@@ -327,7 +327,7 @@ def _provider_for_result(runner_key: str, model: str) -> str:
     """Provider for cost lookup, resolved against the actual returned model.
 
     Agents may swap runners at request time via ``default_runner()`` (env
-    var ``AGNES_LLM_PROVIDER``), so the YAML-declared runner can lie about
+    var ``FINGENT_LLM_PROVIDER``), so the YAML-declared runner can lie about
     the real provider. The cost table is the single source of truth — if
     the model name is registered, prefer its provider. Falls back to the
     runner-derived provider when the model is unknown (e.g. tests with a
@@ -368,7 +368,7 @@ _DASHBOARD_FANOUT_EVENT_TYPES = frozenset({
 
 
 async def write_event(
-    ctx: AgnesContext,
+    ctx: FingentContext,
     event_type: str,
     node_id: str | None,
     data: dict[str, Any],
@@ -430,7 +430,7 @@ async def _insert_run(
 
 
 async def _update_run_status(
-    ctx: AgnesContext, *, status: str, error: str | None,
+    ctx: FingentContext, *, status: str, error: str | None,
 ) -> None:
     async with write_tx(ctx.store.orchestration, ctx.store.orchestration_lock) as conn:
         await conn.execute(
@@ -443,7 +443,7 @@ async def _update_run_status(
 # Helpers
 # --------------------------------------------------------------------------- #
 
-def _canonical_node_input(node: PipelineNode, ctx: AgnesContext) -> dict[str, Any]:
+def _canonical_node_input(node: PipelineNode, ctx: FingentContext) -> dict[str, Any]:
     """Build the deterministic input dict for cache-key purposes."""
     return {
         "trigger_payload": ctx.trigger_payload,
@@ -518,7 +518,7 @@ def _wiki_citations_for_result(result: AgentResult) -> list[dict[str, Any]]:
 
 
 async def _resolved_wiki_citations(
-    ctx: AgnesContext, result: AgentResult,
+    ctx: FingentContext, result: AgentResult,
 ) -> list[dict[str, Any]]:
     """Resolve `result.wiki_references` against the orchestration DB so
     the `agent.decision` event ships with `path` + `title` + `revision_number`.

@@ -4,12 +4,12 @@ Source: RealMetaPRD §7.3.
 """
 from __future__ import annotations
 
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 from backend.orchestration.tools.document_extractor import validate_totals
 
 
 def _ctx(store, extraction):
-    return AgnesContext(
+    return FingentContext(
         run_id=1,
         pipeline_name="document_ingested",
         trigger_source="document.uploaded",
@@ -93,7 +93,7 @@ async def test_bad_currency(store):
 
 async def test_missing_extraction(store):
     """No `extract` node output → ok=False, confidence=0."""
-    ctx = AgnesContext(
+    ctx = FingentContext(
         run_id=1,
         pipeline_name="document_ingested",
         trigger_source="document.uploaded",

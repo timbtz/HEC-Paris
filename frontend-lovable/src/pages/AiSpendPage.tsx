@@ -11,7 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { MicroUsd } from "@/components/agnes/primitives";
+import { MicroUsd } from "@/components/fingent/primitives";
 import { cn } from "@/lib/utils";
 import { fetchAiCosts, fetchGamificationLeaderboard } from "@/lib/endpoints";
 import type { AiCostsGroupKey, AiCostsResponse, AiCostsRow } from "@/lib/types";

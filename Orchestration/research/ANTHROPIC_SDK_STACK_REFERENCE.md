@@ -55,7 +55,7 @@ aclient = anthropic.AsyncAnthropic(
 
 The SDK auto-handles `x-api-key`, `anthropic-version: 2023-06-01`, content-type, connection pooling (httpx, ~100 concurrent per client), and retries (default 3 with exponential backoff on 429/5xx/connection errors).
 
-For the project: **share one `AsyncAnthropic` instance across the FastAPI app**. Construct it at startup; pass it via `AgnesContext` or import as a module-level singleton.
+For the project: **share one `AsyncAnthropic` instance across the FastAPI app**. Construct it at startup; pass it via `FingentContext` or import as a module-level singleton.
 
 ### Beta features
 

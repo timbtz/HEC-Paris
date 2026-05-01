@@ -234,10 +234,10 @@ export const fetchVatReturn = (period: string): Promise<ApiResult<VatReturnRespo
   );
 
 // Gamification (Phase 4.B) — port of TACL-GROUP/pulse-ai-grow.
-// `x-agnes-author` is the auth seam; we let the user set it via a small
+// `x-fingent-author` is the auth seam; we let the user set it via a small
 // header picker on the Adoption page (defaults to tim@hec.example so the
 // demo manager view works out of the box).
-const ga = (author: string) => ({ "x-agnes-author": author });
+const ga = (author: string) => ({ "x-fingent-author": author });
 
 export const fetchGamificationTasks = (): Promise<ApiResult<{ items: GamificationTask[] }>> =>
   apiFetch(`/gamification/tasks?active=true`, {}, () => ({ items: [] }));

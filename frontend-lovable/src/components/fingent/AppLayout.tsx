@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Outlet } from "react-router-dom";
-import { AgnesSidebar } from "./AgnesSidebar";
-import { AgnesTopBar } from "./AgnesTopBar";
+import { FingentSidebar } from "./FingentSidebar";
+import { FingentTopBar } from "./FingentTopBar";
 import { TraceDrawer } from "./TraceDrawer";
 import { useThemeBootstrap } from "@/lib/theme";
 import { useDashboard } from "@/store/dashboard";
@@ -43,9 +43,9 @@ export function AppLayout() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
-      <AgnesSidebar />
+      <FingentSidebar />
       <div className="flex min-w-0 flex-1 flex-col">
-        <AgnesTopBar />
+        <FingentTopBar />
         <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>

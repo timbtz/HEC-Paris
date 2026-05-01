@@ -43,7 +43,7 @@ except ImportError:  # pragma: no cover
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    data_dir = Path(os.environ.get("AGNES_DATA_DIR", "./data")).resolve()
+    data_dir = Path(os.environ.get("FINGENT_DATA_DIR", "./data")).resolve()
     data_dir.mkdir(parents=True, exist_ok=True)
     (data_dir / "blobs").mkdir(parents=True, exist_ok=True)
 
@@ -60,7 +60,7 @@ async def lifespan(app: FastAPI):
         await app.state.store.close()
 
 
-app = FastAPI(title="Agnes (Phase 2)", lifespan=lifespan)
+app = FastAPI(title="Fingent (Phase 2)", lifespan=lifespan)
 
 # CORS — Vite dev server runs at :5173. Permissive in dev; tighten origins
 # for prod via env var or config.
@@ -73,7 +73,7 @@ app.add_middleware(
     allow_origins=_ALLOWED_ORIGINS,
     allow_credentials=False,
     allow_methods=["GET", "POST", "PATCH"],
-    allow_headers=["Content-Type", "Accept", "x-agnes-author"],
+    allow_headers=["Content-Type", "Accept", "x-fingent-author"],
 )
 
 app.include_router(swan_router)

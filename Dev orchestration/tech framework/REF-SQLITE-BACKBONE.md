@@ -20,7 +20,7 @@ goal-driven campaigns, agentic DD pack) compiles down to four obligations on the
 
 | Obligation (PRD §) | Concrete demand on SQLite |
 |---|---|
-| §6 Two-database split | `accounting.db` (canonical domain) + `orchestration.db` (run history). Both WAL, both `foreign_keys=ON`. Path injected per pipeline run via `AgnesContext`. |
+| §6 Two-database split | `accounting.db` (canonical domain) + `orchestration.db` (run history). Both WAL, both `foreign_keys=ON`. Path injected per pipeline run via `FingentContext`. |
 | §6 Append-only, idempotent, replayable | `swan_events`, `pipeline_runs`, `pipeline_events` are insert-only; provider event_id is the idempotency boundary. |
 | §6 Integer cents, no floats | All money columns `INTEGER`. VAT splits with documented rounding. Floats are an outage waiting to happen. |
 | §7.2 Hard invariants | `SUM(debit_cents) = SUM(credit_cents)` per entry. Recorded balance = Swan booked balance after every post. Every `journal_lines.id` has at least one `decision_traces` row. |
@@ -37,7 +37,7 @@ If a design decision below conflicts with one of these, the PRD wins. Everything
 backend/
 ├── api/
 │   ├── main.py               # FastAPI app, lifespan opens both DBs
-│   └── agnes_context.py      # holds the two aiosqlite connections + per-DB write locks
+│   └── fingent_context.py      # holds the two aiosqlite connections + per-DB write locks
 ├── db/
 │   ├── connection.py         # open_db(path), _configure_pragmas()
 │   ├── transactions.py       # write_tx() async context manager — the only sanctioned write path

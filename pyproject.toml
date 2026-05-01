@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agnes"
+name = "fingent"
 version = "0.1.0"
-description = "Agnes — Phase 1 metalayer foundation (DAG executor, three-DB store, audit/cost spine)."
+description = "Fingent — Phase 1 metalayer foundation (DAG executor, three-DB store, audit/cost spine)."
 requires-python = ">=3.12"
 readme = "projectbriefing.md"
 dependencies = [
@@ -29,7 +29,7 @@ mcp = ["fastmcp>=2.0,<4"]
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "pytest-timeout>=2.3"]
 
 [project.scripts]
-agnes-mcp = "backend.mcp.__main__:main"
+fingent-mcp = "backend.mcp.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

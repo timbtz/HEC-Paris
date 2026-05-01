@@ -142,7 +142,7 @@ writing the corresponding task's code.**
   - Lines 19–42 — Kahn topological sort (`_topological_layers`)
   - Lines 49–68 — Per-node execution wrapper (`_run_node`)
   - Lines 79–105 — Orchestrator loop (`_execute`)
-  - Lines 114–124 — `AgnesContext` dataclass shape
+  - Lines 114–124 — `FingentContext` dataclass shape
   - Lines 138–151 — Registry pattern (flat dict, importlib, no decorators)
   - Lines 164–189 — Condition evaluator pattern
   - Lines 197–227 — Failure semantics; flags missing per-node timeout
@@ -284,7 +284,7 @@ backend/
     main.py                          # FastAPI app: lifespan + /healthz only (Phase 1)
   orchestration/
     __init__.py
-    context.py                       # AgnesContext dataclass (RealMetaPRD §6.5)
+    context.py                       # FingentContext dataclass (RealMetaPRD §6.5)
     dag.py                           # Kahn parser, layer computation, cycle detection
     executor.py                      # Layer-by-layer asyncio.gather, fail-fast
     registries.py                    # Four flat-dict registries + lazy importer
@@ -401,7 +401,7 @@ External library docs the agent should consult during implementation:
 
 ```python
 # Files: snake_case (executor.py, dag.py, prompt_hash.py)
-# Classes: CamelCase (AgnesContext, PipelineNode, AgentResult, AgentRunner)
+# Classes: CamelCase (FingentContext, PipelineNode, AgentResult, AgentRunner)
 # Functions: snake_case (open_dbs, write_tx, micro_usd, _topological_layers)
 # Module-private: leading underscore (_topological_layers, _CONDITION_REGISTRY)
 # Constants: UPPER_SNAKE (COST_TABLE_MICRO_USD, _BUS_QUEUE_MAXSIZE)
@@ -532,10 +532,10 @@ def get_tool(key: str) -> Callable[..., dict]:
   RealMetaPRD.** (PRD1_VALIDATION_BRIEFING C2 chose Path B explicitly.)
 - **Conditions are `module.path:symbol` too** — `when: conditions.gating:posted`.
   No `when_class:` / camel-case. The condition function signature is
-  `def cond(ctx: AgnesContext) -> bool` (`02_YAML_WORKFLOW_DSL.md:96-120`).
+  `def cond(ctx: FingentContext) -> bool` (`02_YAML_WORKFLOW_DSL.md:96-120`).
 - **No per-node parameters in YAML** (`02_YAML_WORKFLOW_DSL.md:218-225`). All
-  state flows through `AgnesContext.trigger_payload` and
-  `AgnesContext.node_outputs[upstream_id]`. Phase 1 enforces this by simply
+  state flows through `FingentContext.trigger_payload` and
+  `FingentContext.node_outputs[upstream_id]`. Phase 1 enforces this by simply
   not adding a `params:` key.
 - **Three runners, one shape.** `AgentResult` (RealMetaPRD §7.10) is the
   contract. `test_runner_shape.py` runs the same fixture prompt through all
@@ -573,7 +573,7 @@ sequence, caches deterministically, fails fast on cycles.
 
 **Tasks (high level):**
 
-- Implement `context.py` (`AgnesContext` dataclass).
+- Implement `context.py` (`FingentContext` dataclass).
 - Implement `yaml_loader.py` with strict-key rejection and required-field
   validation.
 - Implement `dag.py` (Kahn topological sort, cycle detection).
@@ -644,7 +644,7 @@ one helper; the wedge SQL returns one row per employee from a fixture run.
 
 ### Task 0 — CREATE `pyproject.toml` + `pytest.ini` + `.env.example`
 
-- **IMPLEMENT**: Project metadata for `agnes` package (name, version 0.1.0),
+- **IMPLEMENT**: Project metadata for `fingent` package (name, version 0.1.0),
   Python `>= 3.12`, runtime deps:
   `aiosqlite>=0.19`, `pyyaml>=6`, `pydantic>=2.5`, `anthropic>=1.0.0`,
   `httpx>=0.27`, `python-dotenv>=1`, `fastapi>=0.115`, `uvicorn[standard]>=0.30`.
@@ -652,7 +652,7 @@ one helper; the wedge SQL returns one row per employee from a fixture run.
   `[adk]=["google-adk>=1.29.0"]`, `[pydantic_ai]=["pydantic-ai-slim[cerebras]"]`.
   `pytest.ini` sets `asyncio_mode = auto`. `.env.example` lists every var from
   RealMetaPRD §9.3 (line 1395–1400) and `Dev orchestration/swan/CLAUDE.md` lines
-  94–106 (`SWAN_*`, `ANTHROPIC_API_KEY`, `AGNES_DATA_DIR`, `AGNES_RUNNERS_ENABLED`).
+  94–106 (`SWAN_*`, `ANTHROPIC_API_KEY`, `FINGENT_DATA_DIR`, `FINGENT_RUNNERS_ENABLED`).
 - **PATTERN**: `REF-FASTAPI-BACKEND.md:31-82` for FastAPI version pin.
 - **IMPORTS**: n/a (config files).
 - **GOTCHA**: Pin `aiosqlite >= 0.19` exactly per `REF-SQLITE-BACKBONE.md:78`.
@@ -810,10 +810,10 @@ one helper; the wedge SQL returns one row per employee from a fixture run.
 
 ### Task 6 — CREATE `backend/orchestration/context.py`
 
-- **IMPLEMENT**: `AgnesContext` dataclass per RealMetaPRD §6.5 line 547:
+- **IMPLEMENT**: `FingentContext` dataclass per RealMetaPRD §6.5 line 547:
   ```python
   @dataclass
-  class AgnesContext:
+  class FingentContext:
       run_id: int
       pipeline_name: str
       trigger_source: str
@@ -834,7 +834,7 @@ one helper; the wedge SQL returns one row per employee from a fixture run.
   lines 198–199). Enforced by convention; lint rule lives in PR review.
 - **VALIDATE**:
   ```bash
-  cd "/home/developer/Projects/HEC Paris" && python -c "from backend.orchestration.context import AgnesContext; print(AgnesContext.__dataclass_fields__.keys())"
+  cd "/home/developer/Projects/HEC Paris" && python -c "from backend.orchestration.context import FingentContext; print(FingentContext.__dataclass_fields__.keys())"
   ```
 
 ---
@@ -916,10 +916,10 @@ one helper; the wedge SQL returns one row per employee from a fixture run.
   `_AGENT_REGISTRY`, `_RUNNER_REGISTRY`, `_CONDITION_REGISTRY` — and
   resolver helpers:
   ```python
-  def get_tool(key: str) -> Callable[[AgnesContext], dict | Awaitable[dict]]: ...
-  def get_agent(key: str) -> Callable[[AgnesContext], Awaitable[AgentResult]]: ...
+  def get_tool(key: str) -> Callable[[FingentContext], dict | Awaitable[dict]]: ...
+  def get_agent(key: str) -> Callable[[FingentContext], Awaitable[AgentResult]]: ...
   def get_runner(key: str) -> "AgentRunner": ...
-  def get_condition(key: str) -> Callable[[AgnesContext], bool]: ...
+  def get_condition(key: str) -> Callable[[FingentContext], bool]: ...
   ```
   Each does `module_path, attr = dotted.rsplit(":", 1); getattr(import_module(module_path), attr)`,
   with an `lru_cache(maxsize=None)` on the resolver.
@@ -1050,7 +1050,7 @@ one helper; the wedge SQL returns one row per employee from a fixture run.
       seed: int | None
 
   class AgentRunner(Protocol):
-      async def run(self, *, ctx: AgnesContext, system: str, tools: list[dict],
+      async def run(self, *, ctx: FingentContext, system: str, tools: list[dict],
                     messages: list[dict], model: str, temperature: float = 0.0,
                     max_tokens: int = 1024, deadline_s: float = 4.5,
                     seed: int | None = None) -> AgentResult: ...
@@ -1242,7 +1242,7 @@ one helper; the wedge SQL returns one row per employee from a fixture run.
       background task via asyncio.create_task, returns run_id immediately."""
       ...
 
-  async def _execute(ctx: AgnesContext, pipeline: Pipeline) -> None:
+  async def _execute(ctx: FingentContext, pipeline: Pipeline) -> None:
       """The orchestrator. Builds layers, runs them, writes events."""
       await write_event(ctx, "pipeline_started", None, {"pipeline_name": pipeline.name})
       try:
@@ -1275,7 +1275,7 @@ one helper; the wedge SQL returns one row per employee from a fixture run.
                             {"error": f"{type(exc).__name__}: {exc}"})
           await update_run_status(ctx, "failed", str(exc))
 
-  async def _run_node(node: PipelineNode, ctx: AgnesContext):
+  async def _run_node(node: PipelineNode, ctx: FingentContext):
       """Per-node wrapper. Evaluates `when`, dispatches to tool/agent,
       checks cache, captures elapsed_ms, returns (id, output, error, was_skipped)."""
       ...
@@ -1318,15 +1318,15 @@ one helper; the wedge SQL returns one row per employee from a fixture run.
 
 - **IMPLEMENT**: Three condition functions:
   ```python
-  def passes_confidence(ctx: AgnesContext) -> bool:
+  def passes_confidence(ctx: FingentContext) -> bool:
       gate = ctx.get("gate-confidence", {}) or {}
       return bool(gate.get("ok"))
 
-  def needs_review(ctx: AgnesContext) -> bool:
+  def needs_review(ctx: FingentContext) -> bool:
       gate = ctx.get("gate-confidence", {}) or {}
       return bool(gate.get("needs_review"))
 
-  def posted(ctx: AgnesContext) -> bool:
+  def posted(ctx: FingentContext) -> bool:
       pe = ctx.get("post-entry", {}) or {}
       return pe.get("status") == "posted"
   ```
@@ -1335,7 +1335,7 @@ one helper; the wedge SQL returns one row per employee from a fixture run.
   about wiring them.
 - **PATTERN**: `02_YAML_WORKFLOW_DSL.md:96-120`; defensive read pattern
   (`ctx.get(..., {}) or {}`) per `02_YAML_WORKFLOW_DSL.md:198-199`.
-- **IMPORTS**: `..context.AgnesContext`.
+- **IMPORTS**: `..context.FingentContext`.
 - **GOTCHA**: Conditions are pure functions of `ctx`. **No I/O, no
   randomness, no globals.** They must be unit-testable in isolation
   (`02_YAML_WORKFLOW_DSL.md:96`).
@@ -1442,7 +1442,7 @@ one helper; the wedge SQL returns one row per employee from a fixture run.
   ```python
   @asynccontextmanager
   async def lifespan(app: FastAPI):
-      data_dir = Path(os.environ.get("AGNES_DATA_DIR", "./data"))
+      data_dir = Path(os.environ.get("FINGENT_DATA_DIR", "./data"))
       data_dir.mkdir(parents=True, exist_ok=True)
       app.state.store = await open_dbs(data_dir)
       app.state.bus_reaper = asyncio.create_task(bus_reaper_task())
@@ -1710,7 +1710,7 @@ cd "/home/developer/Projects/HEC Paris" && python -m pytest backend/tests/test_e
 
 ```bash
 # Boot the API, hit /healthz, observe lifespan tasks start/stop cleanly
-cd "/home/developer/Projects/HEC Paris" && AGNES_DATA_DIR=./data uvicorn backend.api.main:app --workers 1 --port 8000 &
+cd "/home/developer/Projects/HEC Paris" && FINGENT_DATA_DIR=./data uvicorn backend.api.main:app --workers 1 --port 8000 &
 APP_PID=$!
 sleep 2
 curl -fsS http://127.0.0.1:8000/healthz
@@ -1754,7 +1754,7 @@ plan's Anthropic-SDK usage pattern matches current best practice. If
 ## ACCEPTANCE CRITERIA
 
 - [ ] Three SQLite DB files (`accounting.db` / `orchestration.db` /
-      `audit.db`) created on first boot under `${AGNES_DATA_DIR:-./data}/`
+      `audit.db`) created on first boot under `${FINGENT_DATA_DIR:-./data}/`
       with all eight PRAGMAs (RealMetaPRD §6.6).
 - [ ] All three databases have populated `_migrations` rows after first
       boot (`0001_init` + `0002_seed_employees` for audit).

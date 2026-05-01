@@ -19,7 +19,7 @@ from backend.orchestration.agents import counterparty_classifier
 
 
 def _make_ctx(store, *, node_outputs: dict[str, Any] | None = None):
-    return context_module.AgnesContext(
+    return context_module.FingentContext(
         run_id=1,
         pipeline_name="test",
         trigger_source="test",

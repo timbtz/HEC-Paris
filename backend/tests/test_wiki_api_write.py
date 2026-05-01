@@ -36,7 +36,7 @@ async def test_post_creates_revision_one(client):
             "revision": 1,
         },
     }
-    resp = await client.post("/wiki/pages", json=body, headers={"x-agnes-author": "marie"})
+    resp = await client.post("/wiki/pages", json=body, headers={"x-fingent-author": "marie"})
     assert resp.status_code == 200, resp.text
     payload = resp.json()
     assert payload["path"] == body["path"]

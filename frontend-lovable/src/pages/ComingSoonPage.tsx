@@ -1,5 +1,5 @@
 import { Construction } from "lucide-react";
-import { MockedChip } from "@/components/agnes/primitives";
+import { MockedChip } from "@/components/fingent/primitives";
 
 export function ComingSoonPage({ title, hint }: { title: string; hint: string }) {
   return (
@@ -16,7 +16,7 @@ export function ComingSoonPage({ title, hint }: { title: string; hint: string })
         <div>
           <div className="text-sm font-medium">Shipping next.</div>
           <div className="mt-1 max-w-md text-sec text-muted-foreground">
-            This route is part of Agnes&apos;s nine-route surface. Today, Ledger and the trace
+            This route is part of Fingent&apos;s nine-route surface. Today, Ledger and the trace
             drawer are the foundation — the rest plug in as the backend lands.
           </div>
         </div>

@@ -15,7 +15,7 @@ import asyncio
 import pytest
 
 from backend.orchestration import event_bus
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 from backend.orchestration.store.writes import write_tx
 from backend.orchestration.tools import budget_envelope
 
@@ -98,9 +98,9 @@ def _ctx_for(
     entry_id: int,
     envelope_category: str | None = "ai_tokens",
     employee_id: int | None = 1,
-) -> AgnesContext:
+) -> FingentContext:
     cp_node: dict = {"counterparty_id": 1, "envelope_category": envelope_category}
-    return AgnesContext(
+    return FingentContext(
         run_id=1,
         pipeline_name="transaction_booked",
         trigger_source="external_event:swan.Transaction.Booked",

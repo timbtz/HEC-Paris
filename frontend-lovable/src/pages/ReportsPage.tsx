@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CATEGORIES, CATEGORY_BY_KEY, SPEND_TX, currentPeriod, monthlyTotals } from "@/lib/dataset";
 import { EMPLOYEES } from "@/lib/mocks";
-import { Money, MockedChip, ConfidenceBar } from "@/components/agnes/primitives";
+import { Money, MockedChip, ConfidenceBar } from "@/components/fingent/primitives";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/lib/api";
 import {

@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable, Protocol, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..context import AgnesContext
+    from ..context import FingentContext
 
 
 @dataclass(frozen=True)
@@ -50,7 +50,7 @@ class AgentRunner(Protocol):
     async def run(
         self,
         *,
-        ctx: "AgnesContext",
+        ctx: "FingentContext",
         system: str,
         tools: list[dict],
         messages: list[dict],

@@ -17,7 +17,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 from ..registries import default_cerebras_model, default_runner, get_runner
 from ..runners.base import AgentResult
 from ..store.writes import write_tx
@@ -95,7 +95,7 @@ def _summarize_extraction(extraction: dict[str, Any]) -> str:
     return ", ".join(parts)
 
 
-async def _top_candidates(ctx: AgnesContext, limit: int = 20) -> list[dict[str, Any]]:
+async def _top_candidates(ctx: FingentContext, limit: int = 20) -> list[dict[str, Any]]:
     cur = await ctx.store.accounting.execute(
         "SELECT id, legal_name, kind FROM counterparties "
         "ORDER BY created_at DESC LIMIT ?",
@@ -117,7 +117,7 @@ def _format_candidates(candidates: list[dict[str, Any]]) -> str:
 
 
 async def _writeback_ai_pick(
-    ctx: AgnesContext,
+    ctx: FingentContext,
     counterparty_id: int,
     confidence: float,
     *,
@@ -170,7 +170,7 @@ async def _writeback_ai_pick(
         )
 
 
-async def run(ctx: AgnesContext) -> AgentResult:
+async def run(ctx: FingentContext) -> AgentResult:
     """AI fallback. Closed-list pick over top-20 candidates."""
     tx = ctx.get("fetch-transaction") or {}
     extraction = ctx.get("extract") or {}

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 
 
 _REPORT_CONFIDENCE_FLOOR = 0.75
@@ -25,7 +25,7 @@ def _node_output_dict(node: Any) -> dict[str, Any]:
     return {}
 
 
-def period_open(ctx: AgnesContext) -> bool:
+def period_open(ctx: FingentContext) -> bool:
     """True if the trial-balance node reports the period as 'open'.
 
     Reads `period_status` off `compute-trial-balance`'s output (set by
@@ -35,7 +35,7 @@ def period_open(ctx: AgnesContext) -> bool:
     return out.get("period_status") == "open"
 
 
-def period_closeable(ctx: AgnesContext) -> bool:
+def period_closeable(ctx: FingentContext) -> bool:
     """True if the period status is `open` or `closing`.
 
     `validate-period` is the gate node that decides whether to run the
@@ -47,14 +47,14 @@ def period_closeable(ctx: AgnesContext) -> bool:
     return status in ("open", "closing")
 
 
-def has_anomalies(ctx: AgnesContext) -> bool:
+def has_anomalies(ctx: FingentContext) -> bool:
     """True if the anomaly agent surfaced at least one anomaly."""
     out = _node_output_dict(ctx.get("flag-anomalies"))
     anomalies = out.get("anomalies") or []
     return bool(anomalies)
 
 
-def passes_report_confidence(ctx: AgnesContext) -> bool:
+def passes_report_confidence(ctx: FingentContext) -> bool:
     """True if the period summary's compound confidence ≥ 0.75."""
     out = ctx.get("summarize-period") or {}
     confidence = out.get("confidence")

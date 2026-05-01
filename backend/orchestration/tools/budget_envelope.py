@@ -24,7 +24,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 from ..event_bus import publish_event_dashboard
 from ..store.writes import write_tx
 
@@ -34,7 +34,7 @@ def _iso_now() -> str:
 
 
 async def _fetch_entry(
-    ctx: AgnesContext, entry_id: int
+    ctx: FingentContext, entry_id: int
 ) -> tuple[str | None, int | None]:
     cur = await ctx.store.accounting.execute(
         "SELECT entry_date, reversal_of_id FROM journal_entries WHERE id = ?",
@@ -48,7 +48,7 @@ async def _fetch_entry(
 
 
 async def _fetch_envelope(
-    ctx: AgnesContext,
+    ctx: FingentContext,
     employee_id: int | None,
     category: str,
     period: str,
@@ -83,7 +83,7 @@ async def _fetch_envelope(
 
 
 async def _expense_lines(
-    ctx: AgnesContext, entry_id: int
+    ctx: FingentContext, entry_id: int
 ) -> list[tuple[int, int, int]]:
     cur = await ctx.store.accounting.execute(
         "SELECT id, debit_cents, credit_cents FROM journal_lines "
@@ -95,7 +95,7 @@ async def _expense_lines(
     return [(int(r[0]), int(r[1]), int(r[2])) for r in rows]
 
 
-async def _used_cents(ctx: AgnesContext, envelope_id: int) -> int:
+async def _used_cents(ctx: FingentContext, envelope_id: int) -> int:
     cur = await ctx.store.accounting.execute(
         "SELECT COALESCE(SUM(amount_cents), 0) FROM budget_allocations "
         "WHERE envelope_id = ?",
@@ -106,7 +106,7 @@ async def _used_cents(ctx: AgnesContext, envelope_id: int) -> int:
     return int(row[0]) if row is not None else 0
 
 
-async def decrement(ctx: AgnesContext) -> dict[str, Any]:
+async def decrement(ctx: FingentContext) -> dict[str, Any]:
     posted = ctx.get("post-entry") or {}
     entry_id = posted.get("entry_id")
     if entry_id is None:

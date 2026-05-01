@@ -10,13 +10,13 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 from ..event_bus import publish_event_dashboard
 from ..runners.base import AgentResult
 from ..store.writes import write_tx
 
 
-async def _find_closed_period(ctx: AgnesContext, entry_date: str) -> str | None:
+async def _find_closed_period(ctx: FingentContext, entry_date: str) -> str | None:
     """Return the period `code` if `entry_date` falls in a closed period.
 
     None means: no period covers this date (allowed — e.g. dates outside
@@ -35,7 +35,7 @@ async def _find_closed_period(ctx: AgnesContext, entry_date: str) -> str | None:
     return row[0] if row is not None else None
 
 
-def _attribute_source(ctx: AgnesContext) -> str:
+def _attribute_source(ctx: FingentContext) -> str:
     """Walk `ctx.node_outputs` for any `AgentResult`-shaped output. If any
     agent contributed upstream, the trace is `'agent'`, else `'rule'`.
     """
@@ -52,7 +52,7 @@ def _attribute_source(ctx: AgnesContext) -> str:
     return "rule"
 
 
-async def post(ctx: AgnesContext) -> dict[str, Any]:
+async def post(ctx: FingentContext) -> dict[str, Any]:
     """Persist a built journal entry: entry → lines → one trace per line.
 
     Reads the built shape from one of:

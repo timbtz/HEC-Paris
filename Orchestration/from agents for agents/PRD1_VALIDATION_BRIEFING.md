@@ -27,7 +27,7 @@ You are the next session. The previous session validated `Orchestration/PRDs/PRD
 - HITL deferral cite (`:789-858`)
 - `claude-sonnet-4-6` and `claude-haiku-4-5` cost rates
 - Migrations approach (hand-rolled `_migrations` runner)
-- `AgnesContext` / `PipelineContext` propagation pattern
+- `FingentContext` / `PipelineContext` propagation pattern
 - Open Question #1 (`pipeline_dag_versions`) — genuinely unresolved
 
 ---
@@ -294,7 +294,7 @@ After all other edits, re-`Read` every cited line range against the actual sourc
 ## 4. Out of scope for this fix pass
 
 - Don't add new sections beyond what's listed.
-- Don't redesign §6.3 `AgnesContext` — it's verified as faithful to ADK source.
+- Don't redesign §6.3 `FingentContext` — it's verified as faithful to ADK source.
 - Don't touch the migrations runner design.
 - Don't add the `pipeline_dag_versions` table (PRD1 Open Question #1) — it's correctly deferred.
 - Don't expand the `noop_demo.yaml` fixture; it's intentionally minimal.

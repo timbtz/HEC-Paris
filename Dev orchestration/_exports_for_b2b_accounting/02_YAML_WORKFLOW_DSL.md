@@ -204,7 +204,7 @@ Things to notice:
 Order matters; follow this sequence:
 
 1. **Define the contract for any new tools/agents.** Each tool returns a dict; pick the shape *first* because conditions and downstream consumers will key off it.
-2. **Implement tools** in `orchestration/tools/<name>.py` exposing `def run(ctx: AgnesContext) -> dict`. Implement agents in `orchestration/agents/<name>.py` exposing `async def run(ctx: AgnesContext) -> dict`.
+2. **Implement tools** in `orchestration/tools/<name>.py` exposing `def run(ctx: FingentContext) -> dict`. Implement agents in `orchestration/agents/<name>.py` exposing `async def run(ctx: FingentContext) -> dict`.
 3. **Register them** in `orchestration/api/agent_registry.py` — one line each in `_TOOL_REGISTRY` or `_AGENT_REGISTRY`.
 4. **Add named conditions** in `orchestration/api/conditions.py` if branching is needed. Add the function and append it to the `_REGISTRY` dict at the bottom.
 5. **Write the YAML** at `orchestration/pipelines/<name>.yaml`. The filename stem becomes the pipeline name.

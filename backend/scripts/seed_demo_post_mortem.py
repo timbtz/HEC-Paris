@@ -155,6 +155,6 @@ async def main(data_dir: Path) -> dict[str, int]:
 if __name__ == "__main__":
     import os
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    data_dir = Path(os.environ.get("AGNES_DATA_DIR", "./data")).resolve()
+    data_dir = Path(os.environ.get("FINGENT_DATA_DIR", "./data")).resolve()
     summary = asyncio.run(main(data_dir))
     logger.info("seed_demo_post_mortem.complete %s", summary)

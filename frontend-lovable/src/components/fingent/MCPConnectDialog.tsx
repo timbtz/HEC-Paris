@@ -13,17 +13,17 @@ import { cn } from "@/lib/utils";
 
 const CLAUDE_DESKTOP_SNIPPET = `{
   "mcpServers": {
-    "agnes": {
+    "fingent": {
       "command": "python",
       "args": ["-m", "backend.mcp"],
-      "cwd": "/absolute/path/to/agnes"
+      "cwd": "/absolute/path/to/fingent"
     }
   }
 }`;
 
-const CLAUDE_CODE_SNIPPET = `# from the agnes repo
+const CLAUDE_CODE_SNIPPET = `# from the fingent repo
 uv sync --extra mcp
-claude mcp add agnes -- python -m backend.mcp`;
+claude mcp add fingent -- python -m backend.mcp`;
 
 const HTTP_SERVER_SNIPPET = `# 1. start the HTTP transport in a long-running shell
 uv sync --extra mcp
@@ -31,7 +31,7 @@ python -m backend.mcp --http 127.0.0.1:8765`;
 
 const HTTP_CLIENT_SNIPPET = `{
   "mcpServers": {
-    "agnes": {
+    "fingent": {
       "url": "http://127.0.0.1:8765/mcp"
     }
   }
@@ -47,11 +47,11 @@ const TOOLS_PREVIEW: { name: string; pitch: string }[] = [
 ];
 
 const RESOURCES_PREVIEW = [
-  "agnes://run/{run_id}",
-  "agnes://entry/{entry_id}/trace",
-  "agnes://employee/{employee_id}",
-  "agnes://wiki/{page_id}",
-  "agnes://period_report/{report_id}",
+  "fingent://run/{run_id}",
+  "fingent://entry/{entry_id}/trace",
+  "fingent://employee/{employee_id}",
+  "fingent://wiki/{page_id}",
+  "fingent://period_report/{report_id}",
 ];
 
 export function MCPConnectButton() {
@@ -61,7 +61,7 @@ export function MCPConnectButton() {
         <button
           type="button"
           className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-prism/10 px-2.5 py-1.5 text-sec font-medium text-primary transition-colors hover:bg-prism/15"
-          title="Connect Agnes to Claude Desktop, Claude Code, or any MCP client"
+          title="Connect Fingent to Claude Desktop, Claude Code, or any MCP client"
         >
           <Plug className="h-3.5 w-3.5" />
           <span className="hidden md:inline">MCP</span>
@@ -71,10 +71,10 @@ export function MCPConnectButton() {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plug className="h-4 w-4 text-primary" />
-            Connect Agnes via MCP
+            Connect Fingent via MCP
           </DialogTitle>
           <DialogDescription>
-            Open Agnes' agentic surface to Claude Desktop, Claude Code, or any
+            Open Fingent' agentic surface to Claude Desktop, Claude Code, or any
             MCP-compatible AI client. One config — your AI agent can now run
             pipelines, query the ledger, approve closes, and read the policy wiki.
           </DialogDescription>
@@ -96,7 +96,7 @@ export function MCPConnectButton() {
                   {" "}(macOS) or <Inline>%APPDATA%\Claude\claude_desktop_config.json</Inline> (Windows).
                 </>,
                 <>Paste the snippet below. Replace the <Inline>cwd</Inline> with your absolute repo path.</>,
-                <>Restart Claude Desktop. Look for the 🔌 icon — Agnes will appear as an available toolset.</>,
+                <>Restart Claude Desktop. Look for the 🔌 icon — Fingent will appear as an available toolset.</>,
               ]}
             />
             <CodeBlock label="claude_desktop_config.json" code={CLAUDE_DESKTOP_SNIPPET} />
@@ -105,7 +105,7 @@ export function MCPConnectButton() {
           <TabsContent value="code" className="mt-3 space-y-3">
             <Steps
               items={[
-                <>Install the MCP extra and register Agnes with Claude Code:</>,
+                <>Install the MCP extra and register Fingent with Claude Code:</>,
                 <>The CLI will auto-detect tools on next launch — try <Inline>claude</Inline> from the repo root.</>,
               ]}
             />

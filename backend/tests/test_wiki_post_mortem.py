@@ -5,13 +5,13 @@ Source: plan §STEP-BY-STEP Tasks 14, 16, 22 (integration test).
 from __future__ import annotations
 
 from backend.orchestration.agents.wiki_post_mortem_agent import run as draft_run
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 from backend.orchestration.tools.wiki_writer import run as write_run
 from backend.orchestration.wiki.loader import load_pages_for_tags
 
 
-def _ctx(store, *, run_id: int, period_id: str = "2026-Q1", node_outputs=None) -> AgnesContext:
-    return AgnesContext(
+def _ctx(store, *, run_id: int, period_id: str = "2026-Q1", node_outputs=None) -> FingentContext:
+    return FingentContext(
         run_id=run_id,
         pipeline_name="period_close",
         trigger_source="manual",

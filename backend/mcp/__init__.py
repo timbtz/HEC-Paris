@@ -1,7 +1,7 @@
-"""Agnes MCP server — Model Context Protocol surface over the FastAPI app.
+"""Fingent MCP server — Model Context Protocol surface over the FastAPI app.
 
 External AI agents (Claude Desktop, IDE assistants, custom agents) drive
-Agnes through this surface: trigger pipelines, inspect runs, query the GL,
+Fingent through this surface: trigger pipelines, inspect runs, query the GL,
 read the wiki, approve held entries / period reports.
 
 Tools, resources, and prompts are thin wrappers over the FastAPI routers in

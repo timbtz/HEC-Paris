@@ -30,7 +30,7 @@ CUSTOMER_IBAN_ACME = "FR7610278060610001020480201"
 
 
 def _make_ctx(store, *, node_outputs: dict[str, Any]):
-    return context_module.AgnesContext(
+    return context_module.FingentContext(
         run_id=1,
         pipeline_name="test",
         trigger_source="test",

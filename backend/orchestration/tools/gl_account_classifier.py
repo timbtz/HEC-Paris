@@ -14,10 +14,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 
 
-async def run(ctx: AgnesContext) -> dict[str, Any]:
+async def run(ctx: FingentContext) -> dict[str, Any]:
     # Counterparty resolution: prefer the deterministic resolver, fall back
     # to the AI resolver's output (same shape: {counterparty_legal_name: ...}).
     cp = ctx.get("resolve-counterparty") or ctx.get("ai-counterparty-fallback") or {}

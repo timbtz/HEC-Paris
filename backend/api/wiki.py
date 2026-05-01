@@ -1,7 +1,7 @@
 """Wiki page + revision read endpoints.
 
 Source: PRD-AutonomousCFO §7.3 + §7.4 (DAG-viewer drilldown). The DAG
-node trace drawer in `frontend-lovable/src/components/agnes/NodeTraceDrawer.tsx`
+node trace drawer in `frontend-lovable/src/components/fingent/NodeTraceDrawer.tsx`
 hits the revision-pinned read when the operator clicks a citation row;
 the Wiki tab in `frontend-lovable/src/pages/WikiPage.tsx` hits the list
 + head endpoints to render the policy corpus.
@@ -70,12 +70,12 @@ def _coerce_frontmatter(raw: dict[str, Any]) -> WikiFrontmatter:
 
 
 def _author_from_request(request: Request) -> str:
-    """Pull the author string from `x-agnes-author`; default to `cfo`.
+    """Pull the author string from `x-fingent-author`; default to `cfo`.
 
     Auth integration is intentionally out of scope here — the header
     contract is the seam for the future Lovable login flow.
     """
-    return request.headers.get("x-agnes-author") or "cfo"
+    return request.headers.get("x-fingent-author") or "cfo"
 
 
 def _parse_frontmatter(raw: Any) -> Any:
@@ -418,7 +418,7 @@ async def approve_wiki_ratification(
     The actual wiki edit can be made separately via `PUT /wiki/pages/{id}`
     — this endpoint just closes the loop on the agent's proposal so the
     pending-ratifications panel doesn't grow unbounded. The CFO's email
-    (from `x-agnes-author`) is recorded as `resolved_by`.
+    (from `x-fingent-author`) is recorded as `resolved_by`.
     """
     store = request.app.state.store
     author = _author_from_request(request)

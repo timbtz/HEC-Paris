@@ -1,4 +1,4 @@
-# Lovable prompt — Agnes (the Autonomous CFO)
+# Lovable prompt — Fingent (the Autonomous CFO)
 
 > Paste the section below into Lovable as the project brief. It is a single
 > self-contained prompt. Everything outside the `===PROMPT BEGINS===` /
@@ -19,9 +19,9 @@ that needs to land before the mock is replaced with a live wire.
 
 ===PROMPT BEGINS===
 
-# Agnes — the Autonomous CFO
+# Fingent — the Autonomous CFO
 
-Build the customer-facing web app for **Agnes**, a finance-software
+Build the customer-facing web app for **Fingent**, a finance-software
 product for the founder-CFO of a 100-person Franco-German B2B scale-up.
 The brand promise is one sentence: *the last piece of finance software
 this CFO will ever need.* Every euro on every report is one click away

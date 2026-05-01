@@ -10,7 +10,7 @@ approved `task_completion` row with `source='auto'` and a fixed
 `AUTO_COIN_REWARD` payout. The leaderboard therefore reflects actual
 API usage, not self-declared clicks. Manual completions still work in
 parallel (`source='manual'`, manager-approved) — those cover AI use
-that bypasses the Agnes backend (Claude desktop, ChatGPT browser, …).
+that bypasses the Fingent backend (Claude desktop, ChatGPT browser, …).
 
 All read helpers compute `coins_balance` on the fly:
 
@@ -120,7 +120,7 @@ async def coin_balance(
 
 
 async def is_manager(conn: aiosqlite.Connection, email: str | None) -> bool:
-    """`x-agnes-author` → manager check. Empty/unknown emails are not managers."""
+    """`x-fingent-author` → manager check. Empty/unknown emails are not managers."""
     if not email:
         return False
     cur = await conn.execute(

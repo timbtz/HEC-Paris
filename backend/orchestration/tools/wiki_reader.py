@@ -19,12 +19,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 from ..wiki.loader import load_pages_for_tags
 
 
 async def fetch(
-    ctx: AgnesContext,
+    ctx: FingentContext,
     *,
     tags: list[str],
     jurisdiction: str | None = None,
@@ -71,7 +71,7 @@ async def fetch(
 # `ctx.trigger_payload["wiki_tags"]` (and optional `["jurisdiction"]`).
 # Agents that call this in-process should use `fetch(ctx, tags=…)` directly.
 
-async def run(ctx: AgnesContext) -> dict[str, Any]:
+async def run(ctx: FingentContext) -> dict[str, Any]:
     """Pipeline-node entry point: tags from `trigger_payload` or metadata."""
     tags = (
         ctx.trigger_payload.get("wiki_tags")

@@ -1,6 +1,6 @@
 # 01 · Orchestration Reference — DAG Executor, End to End
 
-This document describes the orchestration spine that the new project should lift. All file paths are relative to the Agnes repo root. The transferable parts are the executor, the registry, the context object, the condition evaluator, and the failure semantics. The domain (supply chain) is incidental.
+This document describes the orchestration spine that the new project should lift. All file paths are relative to the Fingent repo root. The transferable parts are the executor, the registry, the context object, the condition evaluator, and the failure semantics. The domain (supply chain) is incidental.
 
 ---
 
@@ -69,7 +69,7 @@ async def _run_node(node, ctx) -> tuple[str, Optional[dict], Optional[str]]:
 
 **Key design choices, with caveats:**
 
-- **Tools run on a thread executor** (`run_in_executor`); agents are awaited directly. This is because Agnes's tools are synchronous SQLite functions — the new project should keep this split if it uses sync DB drivers.
+- **Tools run on a thread executor** (`run_in_executor`); agents are awaited directly. This is because Fingent's tools are synchronous SQLite functions — the new project should keep this split if it uses sync DB drivers.
 - A returned `(node_id, None, None)` means *skipped* (the `when:` guard was false). `(node_id, output, None)` means *succeeded*. `(node_id, None, error)` means *failed*.
 - **Honest gap:** `_elapsed_ms` is stamped onto the output dict, which means it's reachable to downstream nodes that read `ctx.get(...)["_elapsed_ms"]`. Probably an oversight; the new project should namespace it (`__meta__`) or strip it before assigning to `node_outputs`.
 
@@ -77,7 +77,7 @@ async def _run_node(node, ctx) -> tuple[str, Optional[dict], Optional[str]]:
 
 ```python
 async def _execute(pipeline_name, run_id, trigger_source, trigger_payload, db_path):
-    ctx = AgnesContext(run_id=run_id, pipeline_name=pipeline_name,
+    ctx = FingentContext(run_id=run_id, pipeline_name=pipeline_name,
                        trigger_source=trigger_source, trigger_payload=trigger_payload,
                        orchestration_db_path=db_path)
     try:
@@ -108,11 +108,11 @@ async def _execute(pipeline_name, run_id, trigger_source, trigger_payload, db_pa
 
 ---
 
-## 2. The shared context object — `orchestration/api/agnes_context.py`
+## 2. The shared context object — `orchestration/api/fingent_context.py`
 
 ```python
 @dataclass
-class AgnesContext:
+class FingentContext:
     run_id: str
     pipeline_name: str
     trigger_source: str
@@ -153,7 +153,7 @@ def get_tool(name):  return _import(_TOOL_REGISTRY[name])
 Two flat string-keyed dicts mapping the YAML name to a `module.path:attr` dotted reference. `_import` does `importlib.import_module(...).<attr>`. Lazy — the module is only imported the first time `get_agent`/`get_tool` is called.
 
 **To register a new tool:**
-1. Write `orchestration/tools/<name>.py` exposing `def run(ctx: AgnesContext) -> dict`.
+1. Write `orchestration/tools/<name>.py` exposing `def run(ctx: FingentContext) -> dict`.
 2. Add one line to `_TOOL_REGISTRY`.
 3. Reference the YAML key (`tool_class: NameTool`) in a pipeline.
 
@@ -166,11 +166,11 @@ That's it. There's no decorator, no auto-discovery, no class hierarchy. The new 
 The `when:` field in YAML is **not** an expression — it is a **named guard** registered in a Python dict.
 
 ```python
-def has_alternatives(ctx: AgnesContext) -> bool:
+def has_alternatives(ctx: FingentContext) -> bool:
     out = ctx.get("find-alternatives", {})
     return bool(out.get("alternatives"))
 
-def no_substitutes_found(ctx: AgnesContext) -> bool:
+def no_substitutes_found(ctx: FingentContext) -> bool:
     out = ctx.get("find-substitutes", {})
     return "substitutes" in out and not out["substitutes"]
 
@@ -179,7 +179,7 @@ _REGISTRY: dict[str, ConditionFn] = {
     "no_substitutes_found": no_substitutes_found,
     ...
 }
-def evaluate(name: str, ctx: AgnesContext) -> bool:
+def evaluate(name: str, ctx: FingentContext) -> bool:
     fn = _REGISTRY.get(name)
     if fn is None:
         raise ValueError(f"Unknown condition: {name!r}")
@@ -196,7 +196,7 @@ To set a flag, an upstream node simply writes a key into its return dict — e.g
 
 ## 5. Failure semantics
 
-- **Per-node failure short-circuits the run.** `_execute` (line 117) calls `update_run_status(... "failed")` and `return`s on the first node error. Sibling nodes already started in the same `asyncio.gather` will run to completion (gather doesn't cancel them); they just won't propagate. This is fine because the executor never re-uses a failed run, but for the new project, if you want hard cancellation, switch to `asyncio.wait(..., return_when=FIRST_EXCEPTION)` and cancel the rest. **Honest gap:** the prompt asked about `FIRST_COMPLETED` and per-node timeouts (60s/300s) — those are *not* in this code. Agnes uses unbounded `asyncio.gather`; node timeouts must be enforced inside the tool/agent body. The new project should add a wrapper that wraps each `_run_node` call in `asyncio.wait_for(..., timeout=node.timeout)`.
+- **Per-node failure short-circuits the run.** `_execute` (line 117) calls `update_run_status(... "failed")` and `return`s on the first node error. Sibling nodes already started in the same `asyncio.gather` will run to completion (gather doesn't cancel them); they just won't propagate. This is fine because the executor never re-uses a failed run, but for the new project, if you want hard cancellation, switch to `asyncio.wait(..., return_when=FIRST_EXCEPTION)` and cancel the rest. **Honest gap:** the prompt asked about `FIRST_COMPLETED` and per-node timeouts (60s/300s) — those are *not* in this code. Fingent uses unbounded `asyncio.gather`; node timeouts must be enforced inside the tool/agent body. The new project should add a wrapper that wraps each `_run_node` call in `asyncio.wait_for(..., timeout=node.timeout)`.
 - **Skipped nodes are first-class.** Returning `None` for output (when `when:` is false) emits a `node_skipped` event but does *not* fail the run. Downstream nodes that `depends_on` a skipped node still run — they read `ctx.get("skipped-id", {})` and get `{}`, the default. Tools must defensively handle the empty case.
 - **Everything is logged to `orchestration.db`.** Schema in `orchestration/schema/pipeline_schema.sql`:
 

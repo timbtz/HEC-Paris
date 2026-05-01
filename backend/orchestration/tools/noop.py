@@ -9,10 +9,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 
 
-def run(ctx: AgnesContext) -> dict[str, Any]:
+def run(ctx: FingentContext) -> dict[str, Any]:
     return {
         "echo": ctx.trigger_payload,
         "node_outputs_seen": list(ctx.node_outputs.keys()),

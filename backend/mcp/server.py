@@ -1,4 +1,4 @@
-"""FastMCP server exposing the Agnes agentic surface.
+"""FastMCP server exposing the Fingent agentic surface.
 
 Design:
 
@@ -11,7 +11,7 @@ Design:
 - Tools cover the agent-facing operations: pipelines, runs, ledger,
   reports, period reports, employees, documents, wiki, demo events.
 
-- Resources expose single-entity reads via `agnes://...` URIs, so an
+- Resources expose single-entity reads via `fingent://...` URIs, so an
   MCP client (Claude Desktop, etc.) can pin a run/entry/page into the
   conversation context without invoking a tool.
 
@@ -48,7 +48,7 @@ async def _lifespan(_: FastMCP) -> AsyncIterator[dict[str, Any]]:
         transport = httpx.ASGITransport(app=fastapi_app)
         async with httpx.AsyncClient(
             transport=transport,
-            base_url="http://agnes",
+            base_url="http://fingent",
             timeout=httpx.Timeout(60.0, read=120.0),
         ) as client:
             yield {"http": client}
@@ -80,9 +80,9 @@ async def _post(ctx: Context, path: str, json_body: dict[str, Any] | None = None
 
 def build_server() -> FastMCP:
     mcp = FastMCP(
-        name="agnes",
+        name="fingent",
         instructions=(
-            "Agnes is a YAML-DAG executor over three SQLite databases "
+            "Fingent is a YAML-DAG executor over three SQLite databases "
             "(accounting / orchestration / audit). Use the tools to: "
             "trigger pipelines, inspect runs and journal entries, query "
             "the general ledger, read the wiki of accounting policies, "
@@ -342,7 +342,7 @@ def build_server() -> FastMCP:
         ctx: Context,
         document_id: Annotated[int, Field(description="Document id.")],
     ) -> dict:
-        """Document row + extracted line items. Use the `agnes://document/{id}` resource for the URI form."""
+        """Document row + extracted line items. Use the `fingent://document/{id}` resource for the URI form."""
         return await _get(ctx, f"/documents/{document_id}")
 
     # ----------------------------------------------------------------- #
@@ -393,42 +393,42 @@ def build_server() -> FastMCP:
             Field(default=None, description="Specific swan_transactions.id to fire; omit to advance to the next un-fired."),
         ] = None,
     ) -> dict:
-        """Fire a Swan webhook event from the local seed (sets AGNES_SWAN_LOCAL_REPLAY=1)."""
+        """Fire a Swan webhook event from the local seed (sets FINGENT_SWAN_LOCAL_REPLAY=1)."""
         body: dict[str, Any] = {}
         if tx_id is not None:
             body["tx_id"] = tx_id
         return await _post(ctx, "/demo/swan/simulate", body)
 
     # ----------------------------------------------------------------- #
-    # Resources — `agnes://...` URIs an MCP client can pin into context
+    # Resources — `fingent://...` URIs an MCP client can pin into context
     # ----------------------------------------------------------------- #
 
-    @mcp.resource("agnes://run/{run_id}")
+    @mcp.resource("fingent://run/{run_id}")
     async def res_run(run_id: int, ctx: Context) -> dict:
         """Pinnable run reconstruction (events + agent decisions)."""
         return await _get(ctx, f"/runs/{run_id}")
 
-    @mcp.resource("agnes://entry/{entry_id}/trace")
+    @mcp.resource("fingent://entry/{entry_id}/trace")
     async def res_entry_trace(entry_id: int, ctx: Context) -> dict:
         """Pinnable journal-entry audit trace."""
         return await _get(ctx, f"/journal_entries/{entry_id}/trace")
 
-    @mcp.resource("agnes://employee/{employee_id}")
+    @mcp.resource("fingent://employee/{employee_id}")
     async def res_employee(employee_id: int, ctx: Context) -> dict:
         """Pinnable employee detail (envelopes + 30d spend)."""
         return await _get(ctx, f"/employees/{employee_id}")
 
-    @mcp.resource("agnes://document/{document_id}")
+    @mcp.resource("fingent://document/{document_id}")
     async def res_document(document_id: int, ctx: Context) -> dict:
         """Pinnable document row + line items."""
         return await _get(ctx, f"/documents/{document_id}")
 
-    @mcp.resource("agnes://wiki/{page_id}")
+    @mcp.resource("fingent://wiki/{page_id}")
     async def res_wiki(page_id: int, ctx: Context) -> dict:
         """Pinnable wiki page (head revision)."""
         return await _get(ctx, f"/wiki/pages/{page_id}")
 
-    @mcp.resource("agnes://period_report/{report_id}")
+    @mcp.resource("fingent://period_report/{report_id}")
     async def res_period_report(report_id: int, ctx: Context) -> dict:
         """Pinnable period_report row + parsed payload."""
         return await _get(ctx, f"/period_reports/{report_id}")
@@ -477,9 +477,9 @@ def build_server() -> FastMCP:
 
     @mcp.prompt
     def expense_coding_guidance() -> str:
-        """How an agent should think about coding a new transaction in Agnes."""
+        """How an agent should think about coding a new transaction in Fingent."""
         return (
-            "Coding a new transaction in Agnes:\n"
+            "Coding a new transaction in Fingent:\n"
             "- Counterparty resolution comes first — deterministic rules "
             "(IBAN/VAT/merchant) win; the AI fallback only fires when no "
             "rule matches and the result writeback creates a future rule.\n"
@@ -502,5 +502,5 @@ mcp = build_server()
 
 
 if __name__ == "__main__":  # pragma: no cover
-    transport = os.environ.get("AGNES_MCP_TRANSPORT", "stdio")
+    transport = os.environ.get("FINGENT_MCP_TRANSPORT", "stdio")
     mcp.run(transport=transport)

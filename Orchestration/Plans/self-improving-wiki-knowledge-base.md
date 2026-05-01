@@ -132,7 +132,7 @@ The critical invariant: every wiki interaction is *re-discovered* per call. The 
 
 **Frontend (out of scope for this plan, but stay non-breaking)**
 
-- `frontend-lovable/src/components/agnes/NodeTraceDrawer.tsx` — consumes `wiki_citations` from the SSE event. Don't change the event shape; only add fields if absolutely necessary.
+- `frontend-lovable/src/components/fingent/NodeTraceDrawer.tsx` — consumes `wiki_citations` from the SSE event. Don't change the event shape; only add fields if absolutely necessary.
 - `frontend-lovable/src/pages/WikiPage.tsx` — uses `GET /wiki/pages` + `GET /wiki/pages/{id}`. The new PUT/POST will be wired in a follow-up; this plan only ships the backend endpoints.
 
 ### New Files to Create
@@ -171,7 +171,7 @@ The critical invariant: every wiki interaction is *re-discovered* per call. The 
 **Naming conventions (from codebase scan)**
 
 - Tool module names: `tools/<thing>.py` with `async def fetch(ctx, *, ...) -> dict` for in-process callers and `async def run(ctx) -> dict` for YAML-pipeline entry. See `tools/wiki_reader.py:26` and `:74`.
-- Agent module names: `agents/<thing>_agent.py` with `async def run(ctx: AgnesContext) -> AgentResult`. See `agents/gl_account_classifier_agent.py:95` and `agents/anomaly_flag_agent.py:58`.
+- Agent module names: `agents/<thing>_agent.py` with `async def run(ctx: FingentContext) -> AgentResult`. See `agents/gl_account_classifier_agent.py:95` and `agents/anomaly_flag_agent.py:58`.
 - Migration filenames: `00NN_<lower_snake_description>.py` matching the convention in `store/migrations/orchestration/`.
 - Test filenames: `test_<unit_under_test>.py` colocated under `backend/tests/`.
 
@@ -313,7 +313,7 @@ Close the loop by making the wiki editable from the existing GET-only API.
 - Add `POST /wiki/pages` (create new page; body `{path, title, body_md, frontmatter}`).
 - Add `PUT /wiki/pages/{page_id}` (write a new revision; body `{title, body_md, frontmatter}`).
 - Both endpoints validate `frontmatter` via `WikiFrontmatter.from_dict` (raises `ValueError` → return 400). Both call `wiki.writer.upsert_page` so `index.md` / `log.md` updates flow automatically.
-- Author field: take from `request.headers.get("x-agnes-author")` for now; falls back to `"cfo"`. Auth integration is out of scope.
+- Author field: take from `request.headers.get("x-fingent-author")` for now; falls back to `"cfo"`. Auth integration is out of scope.
 
 ### Phase 6: Tests + validation
 
@@ -513,7 +513,7 @@ IMPORTANT: Execute every task in order, top to bottom. Each task is atomic and i
 - **IMPLEMENT**:
   - `POST /wiki/pages` — body `{path, title, body_md, frontmatter}`. Validates frontmatter via `WikiFrontmatter.from_dict`. Calls `upsert_page`. Returns `{page_id, revision_id, path, revision_number}`.
   - `PUT /wiki/pages/{page_id}` — body `{title, body_md, frontmatter}`. Looks up `path` from `wiki_pages WHERE id=?` first; 404 if missing. Calls `upsert_page` with that path. Same response shape.
-  - Author: `request.headers.get("x-agnes-author") or "cfo"`.
+  - Author: `request.headers.get("x-fingent-author") or "cfo"`.
 - **PATTERN**: existing GET handlers in `backend/api/wiki.py:54-217`.
 - **IMPORTS**: `from pydantic import BaseModel, Field`; `from backend.orchestration.wiki import upsert_page, WikiFrontmatter`.
 - **GOTCHA**: The store handles + locks live on `request.app.state.store`. Look at `backend/api/wiki.py:63-64` for the access pattern.
@@ -619,7 +619,7 @@ uvicorn backend.api.main:app --reload --workers 1
 # 2. Create a policy via the new API
 curl -X POST http://127.0.0.1:8000/wiki/pages \
   -H 'content-type: application/json' \
-  -H 'x-agnes-author: marie' \
+  -H 'x-fingent-author: marie' \
   -d '{"path":"policies/expense-thresholds.md","title":"Expense thresholds","body_md":"## Manager approval > 500 EUR","frontmatter":{"applies_to":["anomaly_detection","period_close"],"jurisdictions":["FR"],"revision":1}}'
 
 # 3. Trigger a period close (replace tenant defaults as needed)

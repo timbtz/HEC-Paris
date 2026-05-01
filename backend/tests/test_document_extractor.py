@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from backend.orchestration.agents import document_extractor
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 from backend.orchestration.runners.base import AgentResult
 from backend.orchestration.store.writes import write_tx
 
@@ -61,7 +61,7 @@ async def test_document_extractor_returns_agent_result(
         tool_name="submit_invoice",
     )
 
-    ctx = AgnesContext(
+    ctx = FingentContext(
         run_id=1,
         pipeline_name="document_ingested",
         trigger_source="document.uploaded",
@@ -97,7 +97,7 @@ async def test_document_extractor_returns_agent_result(
 
 
 async def test_document_extractor_missing_id_raises(store):
-    ctx = AgnesContext(
+    ctx = FingentContext(
         run_id=1,
         pipeline_name="document_ingested",
         trigger_source="document.uploaded",
@@ -110,7 +110,7 @@ async def test_document_extractor_missing_id_raises(store):
 
 
 async def test_document_extractor_unknown_id_raises(store):
-    ctx = AgnesContext(
+    ctx = FingentContext(
         run_id=1,
         pipeline_name="document_ingested",
         trigger_source="document.uploaded",

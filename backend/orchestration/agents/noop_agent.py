@@ -6,12 +6,12 @@ Phase 1 this would actually hit the Anthropic API.
 """
 from __future__ import annotations
 
-from ..context import AgnesContext
+from ..context import FingentContext
 from ..registries import get_runner
 from ..runners.base import AgentResult
 
 
-async def run(ctx: AgnesContext) -> AgentResult:
+async def run(ctx: FingentContext) -> AgentResult:
     runner = get_runner("anthropic")
     return await runner.run(
         ctx=ctx,

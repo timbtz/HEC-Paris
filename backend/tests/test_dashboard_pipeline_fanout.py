@@ -7,7 +7,7 @@ updates without polling.
 from __future__ import annotations
 
 from backend.orchestration import event_bus
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 from backend.orchestration.executor import write_event
 
 
@@ -19,7 +19,7 @@ async def _drain_dashboard(q, *, max_take: int = 4) -> list[dict]:
 
 
 async def test_pipeline_started_completed_failed_fan_out_to_dashboard(store):
-    ctx = AgnesContext(
+    ctx = FingentContext(
         run_id=1,
         pipeline_name="transaction_booked",
         trigger_source="manual",
@@ -57,7 +57,7 @@ async def test_pipeline_started_completed_failed_fan_out_to_dashboard(store):
 
 
 async def test_pipeline_failed_also_fans_out(store):
-    ctx = AgnesContext(
+    ctx = FingentContext(
         run_id=2,
         pipeline_name="document_ingested",
         trigger_source="manual",

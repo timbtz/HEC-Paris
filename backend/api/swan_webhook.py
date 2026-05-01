@@ -69,13 +69,13 @@ async def _resolve_employee_id(store, resource_id: str) -> int | None:
     if row is not None:
         return int(row[0])
 
-    # Demo replay fallback (RealMetaPRD §9.5 carve-out for AGNES_SWAN_LOCAL_REPLAY):
+    # Demo replay fallback (RealMetaPRD §9.5 carve-out for FINGENT_SWAN_LOCAL_REPLAY):
     # the seed puts every swan_transaction on a single company account, so the
     # account/iban match above never lands. When the replay flag is on, treat the
     # resource_id as a swan_transactions.id and deterministically attribute it to
     # one of the active employees by hashing the tx id. Real Swan traffic never
     # reaches this branch — it always matches a per-employee account above.
-    if os.environ.get("AGNES_SWAN_LOCAL_REPLAY") != "1":
+    if os.environ.get("FINGENT_SWAN_LOCAL_REPLAY") != "1":
         return None
     cur = await store.accounting.execute(
         "SELECT id FROM swan_transactions WHERE id = ?",

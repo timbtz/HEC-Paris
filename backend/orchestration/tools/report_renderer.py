@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 from ..event_bus import publish_event_dashboard
 from ..store.writes import write_tx
 
@@ -28,7 +28,7 @@ _REPORT_CONFIDENCE_FLOOR = 0.75
 # TODO: move to confidence_thresholds table (scope='report:*').
 
 
-async def render(ctx: AgnesContext) -> dict[str, Any]:
+async def render(ctx: FingentContext) -> dict[str, Any]:
     """Serialize the report payload, write to disk + DB, emit dashboard event.
 
     Reads:

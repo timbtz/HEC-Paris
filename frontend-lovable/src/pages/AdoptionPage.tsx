@@ -41,7 +41,7 @@ import type {
   GamificationToday,
 } from "@/lib/types";
 
-// Default acting identity. The header `x-agnes-author` is the auth seam —
+// Default acting identity. The header `x-fingent-author` is the auth seam —
 // Tim is seeded as a manager so this gives the demo a manager view out of
 // the box. Switch via the small input top-right to test as Marie/Paul.
 const DEFAULT_AUTHOR = "tim@hec.example";
@@ -71,7 +71,7 @@ export default function AdoptionPage() {
           <p className="text-sec text-muted-foreground">
             Coins, leaderboard, rewards. Every real agent call auto-credits the
             attributed employee — manual completions cover AI use that bypasses
-            Agnes (Claude desktop, ChatGPT browser, …).
+            Fingent (Claude desktop, ChatGPT browser, …).
           </p>
         </div>
         <div className="flex items-center gap-2">

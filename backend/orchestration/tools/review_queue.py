@@ -13,7 +13,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 from ..event_bus import publish_event_dashboard
 from ..store.writes import write_tx
 
@@ -22,7 +22,7 @@ def _iso_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _classify(ctx: AgnesContext) -> tuple[str, float | None]:
+def _classify(ctx: FingentContext) -> tuple[str, float | None]:
     """Pick a `kind` + extract a confidence to log.
 
     Order of precedence:
@@ -42,7 +42,7 @@ def _classify(ctx: AgnesContext) -> tuple[str, float | None]:
     return "manual", None
 
 
-def _build_reason(ctx: AgnesContext, kind: str) -> str:
+def _build_reason(ctx: FingentContext, kind: str) -> str:
     if kind == "low_confidence":
         gate = ctx.get("gate-confidence") or {}
         return (
@@ -55,7 +55,7 @@ def _build_reason(ctx: AgnesContext, kind: str) -> str:
     return "queued for manual review"
 
 
-async def enqueue(ctx: AgnesContext) -> dict[str, Any]:
+async def enqueue(ctx: FingentContext) -> dict[str, Any]:
     posted = ctx.get("post-entry") or {}
     entry_id = posted.get("entry_id")  # may be None
 

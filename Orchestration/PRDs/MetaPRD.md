@@ -164,7 +164,7 @@ This PRD scopes the **foundation layer** of that product: a two-database SQLite 
 
 ### Design patterns
 
-- **Two-database split.** `accounting.db` is the canonical domain. `orchestration.db` is the audit/event store. Both run WAL, both have `foreign_keys=ON`. Path injected per pipeline run via `AgnesContext`.
+- **Two-database split.** `accounting.db` is the canonical domain. `orchestration.db` is the audit/event store. Both run WAL, both have `foreign_keys=ON`. Path injected per pipeline run via `FingentContext`.
 - **Append-only event tables.** `swan_events`, `pipeline_runs`, `pipeline_events`. No UPDATE, no DELETE. Replay is reading them back.
 - **Topologically-ordered DAG executor.** Kahn's algorithm at parse time; layers run in parallel via `asyncio.gather`; fail-fast within a run.
 - **Tool registry over decorators.** `_TOOL_REGISTRY: dict[str, str]` mapping YAML class name → `module.path:run`. Lazy import. No magic.
@@ -182,7 +182,7 @@ backend/
     pipeline_loader.py       # YAML → Pipeline dataclass
     agent_registry.py        # _TOOL_REGISTRY, _AGENT_REGISTRY
     conditions.py            # named condition functions
-    agnes_context.py         # AgnesContext dataclass
+    fingent_context.py         # FingentContext dataclass
   ingress/
     swan_webhook.py          # signature check, idempotent insert, route by event_type
     swan_client.py           # GraphQL re-query layer
@@ -669,7 +669,7 @@ _AGENT_REGISTRY: dict[str, str] = {
 - ✅ Swan OAuth client (token cache, refresh-on-401)
 - ✅ `/swan/webhook` endpoint: signature verify, idempotent insert, route via `routing.yaml`, return 200
 - ✅ DAG executor with topological layering, `asyncio.gather` per layer, append-only event writes
-- ✅ Tool / agent registries; `AgnesContext` dataclass
+- ✅ Tool / agent registries; `FingentContext` dataclass
 - ✅ Three tools: `SwanQueryTool`, `CounterpartyResolverTool` (rules-only), `JournalEntryBuilderTool`, `GLPosterTool`, `BalanceInvariantTool`
 - ✅ One pipeline: `transaction_booked.yaml`
 - ✅ One demo: card spend → journal entry → balance assert

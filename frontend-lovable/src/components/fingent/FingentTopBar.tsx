@@ -32,7 +32,7 @@ function currentPeriod(): string {
   return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
 }
 
-export function AgnesTopBar() {
+export function FingentTopBar() {
   const location = useLocation();
   const segments = location.pathname.split("/").filter(Boolean);
   const crumb = segments.length === 0 ? "Today" : ROUTE_NAMES[segments[0]] ?? segments[0];
@@ -44,7 +44,7 @@ export function AgnesTopBar() {
     <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/80 px-6 backdrop-blur">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sec">
-        <span className="text-muted-foreground">Agnes</span>
+        <span className="text-muted-foreground">Fingent</span>
         <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
         <span className="font-medium text-foreground">{crumb}</span>
       </div>
@@ -85,7 +85,7 @@ export function AgnesTopBar() {
             <DropdownMenuLabel className="text-meta uppercase tracking-wide text-muted-foreground">
               Tenant
             </DropdownMenuLabel>
-            <div className="px-2 pb-2 text-sec">Agnes Finance OÜ</div>
+            <div className="px-2 pb-2 text-sec">Fingent Finance OÜ</div>
             <DropdownMenuSeparator className="bg-border" />
             <DropdownMenuLabel className="text-meta uppercase tracking-wide text-muted-foreground">
               Appearance

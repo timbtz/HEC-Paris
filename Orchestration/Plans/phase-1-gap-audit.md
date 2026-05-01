@@ -30,7 +30,7 @@ backend/
   orchestration/
     audit.py                               # propose_checkpoint_commit (✅ Phase C)
     cache.py                               # node cache (✅ Phase B)
-    context.py                             # AgnesContext dataclass
+    context.py                             # FingentContext dataclass
     cost.py                                # COST_TABLE_MICRO_USD (✅ Phase C)
     dag.py                                 # Kahn topological build (✅ Phase B)
     event_bus.py                           # in-process pub/sub (no SSE endpoint)

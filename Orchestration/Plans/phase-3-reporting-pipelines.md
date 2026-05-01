@@ -18,7 +18,7 @@ This is **Phase 3** in the project lineage (Phase 1 = metalayer foundation, Phas
 
 ## User Story
 
-As an engineer demoing Agnes
+As an engineer demoing Fingent
 I want a Reports tab that renders a balance sheet, P&L, cashflow, VAT return, and a period-close run with a click-through audit trace
 So that judges see not just the live ledger and envelope rings, but the full standard-financial-report stack falling out of the same audited ledger — with the agent layer earning its keep on accrual proposals and VAT anomaly flagging.
 
@@ -288,7 +288,7 @@ Execute every task in order, top to bottom. Each task is atomic and independentl
 
 #### CREATE `backend/scripts/replay_swan_seed.py`
 
-- **IMPLEMENT**: CLI entrypoint that iterates rows in `swan_transactions` ASC by `(execution_date, id)`, builds a synthetic webhook envelope (mirror the body in `backend/api/swan_webhook.py:74` — same JSON shape Swan sends in production), POSTs each to `http://{host}:{port}/swan/webhook`. Read host/port from env (`AGNES_HOST` default `localhost`, `AGNES_PORT` default `8000`). Log per-row: `[ok|skipped|failed] tx_id elapsed_ms`. Emit a final summary `{posted, skipped, failed}`.
+- **IMPLEMENT**: CLI entrypoint that iterates rows in `swan_transactions` ASC by `(execution_date, id)`, builds a synthetic webhook envelope (mirror the body in `backend/api/swan_webhook.py:74` — same JSON shape Swan sends in production), POSTs each to `http://{host}:{port}/swan/webhook`. Read host/port from env (`FINGENT_HOST` default `localhost`, `FINGENT_PORT` default `8000`). Log per-row: `[ok|skipped|failed] tx_id elapsed_ms`. Emit a final summary `{posted, skipped, failed}`.
 - **PATTERN**: read `backend/api/swan_webhook.py:74` for the expected body shape. Read `backend/orchestration/store/migrations/accounting/0006_demo_swan_transactions.py` for column names and seeded values.
 - **IMPORTS**: `httpx`, `aiosqlite`, `asyncio`, `argparse`, `os`. Reuse `backend.orchestration.store.bootstrap.open_dbs` to read the seed.
 - **GOTCHA**: idempotency depends on `gl_poster.post` deduping by `swan_transaction_id` — verify by re-running the script; the second run should report all `skipped` (or all-already-posted). If `gl_poster` does NOT yet dedupe, add a check in the script: skip rows where `swan_transactions.id` already has an entry in `journal_lines.swan_transaction_id`.
@@ -417,7 +417,7 @@ Six GET endpoints. All return `{currency: 'EUR', as_of|period, lines: [...], tot
 
 #### CREATE `backend/orchestration/tools/period_aggregator.py`
 
-- **IMPLEMENT**: three async callables with `(ctx: AgnesContext) -> dict[str, Any]` signatures.
+- **IMPLEMENT**: three async callables with `(ctx: FingentContext) -> dict[str, Any]` signatures.
   - `compute_trial_balance(ctx)` — reads `period_code` from `ctx.trigger_payload`, runs the same trial-balance SQL as the `/reports/trial_balance` endpoint, returns `{trial_balance: [...], total_debit_cents, total_credit_cents, balanced: bool, confidence: 1.0}`.
   - `compute_open_entries(ctx)` — finds journal_entries with `accrual_link_id IS NULL AND basis='accrual'` whose `entry_date` falls inside the closing period; returns `{open_entries: [...], count: int, confidence: 1.0}`.
   - `summarize_period(ctx)` — final aggregator; returns `{period_code, trial_balance, open_entries, anomalies, confidence}` for `report_renderer` to write.

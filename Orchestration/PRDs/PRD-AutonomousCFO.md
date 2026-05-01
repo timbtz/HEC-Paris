@@ -1,6 +1,6 @@
-# PRD — Agnes: The Autonomous CFO
+# PRD — Fingent: The Autonomous CFO
 
-> **Status:** Product PRD for the customer-facing surface of Agnes, layered on top of the Phase 1 + Phase 2 + Phase 3 backend already shipped (see `RealMetaPRD.md` for the engine spec, `CLAUDE.md` for the live state — note that the reporting layer is already in place: SQL-only `/reports/*`, plus `period_close` / `vat_return` / `year_end_close` agentic pipelines).
+> **Status:** Product PRD for the customer-facing surface of Fingent, layered on top of the Phase 1 + Phase 2 + Phase 3 backend already shipped (see `RealMetaPRD.md` for the engine spec, `CLAUDE.md` for the live state — note that the reporting layer is already in place: SQL-only `/reports/*`, plus `period_close` / `vat_return` / `year_end_close` agentic pipelines).
 > **Scope:** Onboarding, daily CFO experience, employee-benefit integrations, living-wiki rule layer, campaign-driven balance sheet, **board-pack and cash-forecast and audit-pack reports on top of the existing reporting layer**. Software-centric, not infrastructural.
 > **This PRD is Phase 4.** Phases 1–3 are shipped.
 > **Last updated:** 2026-04-25.
@@ -10,9 +10,9 @@
 
 ## 1. Executive Summary
 
-Agnes is the **last piece of finance software a 50–250 person European scale-up CFO will need**. It fuses three things that no competitor combines in one product: a live double-entry ledger fed sub-5-second by Swan webhooks, per-employee budget envelopes that are written in the *same database transaction* as the journal entry, and a decision-trace contract joined to every line on every report — making the EU AI Act provenance regime a free side-effect of how the product works.
+Fingent is the **last piece of finance software a 50–250 person European scale-up CFO will need**. It fuses three things that no competitor combines in one product: a live double-entry ledger fed sub-5-second by Swan webhooks, per-employee budget envelopes that are written in the *same database transaction* as the journal entry, and a decision-trace contract joined to every line on every report — making the EU AI Act provenance regime a free side-effect of how the product works.
 
-On top of that engine, Agnes ships a CFO-grade product surface: a guided onboarding that captures the firm's chart of accounts, fiscal posture, VAT regime, banking provider, and benefit-in-kind elections; native integrations with the six employee-benefit systems an EU SME actually uses (JobRad, JobBicycle, Urban Sports Club, EGYM Wellpass, Finn, company dinners) with per-employee caps and statutory accounting treatment baked in; a **Living Rule Wiki** that lets the CFO and the auditor co-edit markdown documents which the reasoning agents consume verbatim as prompt input — so the CFO writes "company dinners over €250 need attendee names" once, and every future agent decision applies it; agentic reports for monthly close, board pack, DD pack, cash-flow forecast, and VAT return; and a real-time visualization of the agent pipeline executing in the browser so the CFO can audit *which agent decided what, with which prompt, citing which rule, costing how much*, on every line of every report.
+On top of that engine, Fingent ships a CFO-grade product surface: a guided onboarding that captures the firm's chart of accounts, fiscal posture, VAT regime, banking provider, and benefit-in-kind elections; native integrations with the six employee-benefit systems an EU SME actually uses (JobRad, JobBicycle, Urban Sports Club, EGYM Wellpass, Finn, company dinners) with per-employee caps and statutory accounting treatment baked in; a **Living Rule Wiki** that lets the CFO and the auditor co-edit markdown documents which the reasoning agents consume verbatim as prompt input — so the CFO writes "company dinners over €250 need attendee names" once, and every future agent decision applies it; agentic reports for monthly close, board pack, DD pack, cash-flow forecast, and VAT return; and a real-time visualization of the agent pipeline executing in the browser so the CFO can audit *which agent decided what, with which prompt, citing which rule, costing how much*, on every line of every report.
 
 **MVP goal:** A CFO of a 100-person Franco-German scale-up can self-onboard in <30 minutes, connect Swan + their HRIS, ratify the auto-generated rule wiki, and within 24 hours have (a) a live ledger with all six benefit integrations classified correctly, (b) per-employee real-time envelopes for each benefit, (c) a one-click monthly board pack with full decision-trace drill-down, and (d) a campaign builder for goal-driven cash actions like *"save €15K for the CNC machine by Q3."*
 
@@ -27,8 +27,8 @@ On top of that engine, Agnes ships a CFO-grade product surface: a guided onboard
 1. **System of action, not system of record.** Agents *execute*. The human approves at the threshold gate, not on every line. (Hg Catalyst's framing — see `hg_catalyst_briefing.md`.)
 2. **Provenance is a join key, not a side log.** Every figure on every report traces to a `(decision, cost, employee)` triple. Click any number → see the agent, model, prompt-hash, rule citation, source document. No JSON sidecar. No "agents cite their work" hand-wave.
 3. **The rule wiki is the prompt.** Agents read living markdown documents that the CFO and the auditor co-author. When the auditor flags a misbooking in May, the wiki page updates and every future booking inherits the correction. Karpathy's compounding wiki, applied to accounting policy.
-4. **Budget and ledger are one transaction.** Eventually-consistent budgets are theatre. Agnes writes the journal entry and the envelope decrement under the same `BEGIN IMMEDIATE`. If one fails, both fail.
-5. **The CFO is the user, the accountant is downstream.** Pennylane optimizes for the expert-comptable. Agnes optimizes for the founder-CFO who has to read the report on Sunday before the board call on Monday.
+4. **Budget and ledger are one transaction.** Eventually-consistent budgets are theatre. Fingent writes the journal entry and the envelope decrement under the same `BEGIN IMMEDIATE`. If one fails, both fail.
+5. **The CFO is the user, the accountant is downstream.** Pennylane optimizes for the expert-comptable. Fingent optimizes for the founder-CFO who has to read the report on Sunday before the board call on Monday.
 
 ---
 
@@ -52,7 +52,7 @@ The accountant who reviews Marie's books and signs the statutory filings. Wants:
 
 ### Secondary persona — *"Paul, employee using JobRad + Urban Sports Club + dinners"*
 
-Doesn't see Agnes directly. Sees: a Slack message *"Your €48 USC subscription used 96% of this month's wellness envelope"* and a Telegram approval prompt for the €280 client dinner with one tap. Trusts the system because the receipt was OCR'd in 4 seconds.
+Doesn't see Fingent directly. Sees: a Slack message *"Your €48 USC subscription used 96% of this month's wellness envelope"* and a Telegram approval prompt for the €280 client dinner with one tap. Trusts the system because the receipt was OCR'd in 4 seconds.
 
 ### Pain points (grounded in survey research, see Appendix A)
 
@@ -105,7 +105,7 @@ Doesn't see Agnes directly. Sees: a Slack message *"Your €48 USC subscription 
 ### ❌ Out of scope (deferred)
 
 - ❌ Multi-currency ledger (single-currency MVP — see RealMetaPRD §15 caveats)
-- ❌ Multi-entity consolidation (one legal entity per Agnes tenant in MVP)
+- ❌ Multi-entity consolidation (one legal entity per Fingent tenant in MVP)
 - ❌ Multi-worker uvicorn (per-DB asyncio.Lock doesn't coordinate cross-process)
 - ❌ Native payroll computation (we ingest payslip artefacts; Lohnsteuer/URSSAF computation stays with PayFit / DATEV / Personio)
 - ❌ Direct e-invoicing PDP submission (we file-format-validate; submission goes via the customer's chosen PDP partner)
@@ -123,17 +123,17 @@ Doesn't see Agnes directly. Sees: a Slack message *"Your €48 USC subscription 
 
 **US-1 — Onboard in under 30 minutes.**
 *As a* founder-CFO,
-*I want to* point Agnes at my Swan account, drop in last year's TB and chart of accounts, and answer ~15 questions in a wizard,
+*I want to* point Fingent at my Swan account, drop in last year's TB and chart of accounts, and answer ~15 questions in a wizard,
 *so that* by the end of the wizard my live ledger is running and my Living Rule Wiki is auto-drafted from my answers.
 
-> *Example:* Marie connects her Swan client_id; Agnes pulls the last 90 days of transactions; the wizard offers FR PCG vs DE SKR04 (Marie picks both — FR primary), asks about VAT regime (réel normal monthly), prompts for per-employee budget defaults (€50 USC, €1,200 JobRad cap, €21.10/meal), confirms accrual basis, and generates 12 wiki pages she ratifies in one pass.
+> *Example:* Marie connects her Swan client_id; Fingent pulls the last 90 days of transactions; the wizard offers FR PCG vs DE SKR04 (Marie picks both — FR primary), asks about VAT regime (réel normal monthly), prompts for per-employee budget defaults (€50 USC, €1,200 JobRad cap, €21.10/meal), confirms accrual basis, and generates 12 wiki pages she ratifies in one pass.
 
 **US-2 — Classify a JobRad employee without thinking about §3 Nr. 37 EStG.**
 *As a* CFO,
-*I want to* upload a JobRad invoice or receive its webhook and have Agnes book it correctly as a 36-month operating lease with the 0.25% gross-list-price BIK on Paul's payslip and the input VAT recovered,
+*I want to* upload a JobRad invoice or receive its webhook and have Fingent book it correctly as a 36-month operating lease with the 0.25% gross-list-price BIK on Paul's payslip and the input VAT recovered,
 *so that* I never need to ask my Steuerberater whether the 0.25% rule applies again.
 
-> *Example:* Paul's €99/month JobRad lease lands. Agnes posts the lease instalment, decrements Paul's "company-bike" envelope, queues a Sachbezug payslip line for €X (0.25% × bike list price), and writes a decision-trace citing the *DE Bewirtung & BIK rules* wiki page. Marie sees one row in the review queue with the citation; she clicks approve.
+> *Example:* Paul's €99/month JobRad lease lands. Fingent posts the lease instalment, decrements Paul's "company-bike" envelope, queues a Sachbezug payslip line for €X (0.25% × bike list price), and writes a decision-trace citing the *DE Bewirtung & BIK rules* wiki page. Marie sees one row in the review queue with the citation; she clicks approve.
 
 **US-3 — Audit "why is this number on my P&L?" in two clicks.**
 *As a* CFO under auditor scrutiny,
@@ -151,17 +151,17 @@ Doesn't see Agnes directly. Sees: a Slack message *"Your €48 USC subscription 
 
 **US-5 — Edit the rule wiki, change every future decision.**
 *As a* CFO whose auditor flagged that meals over €250 must list attendees,
-*I want to* edit one markdown page in Agnes — `wiki/policies/fr-bewirtung.md` — to say "≥€250 → require attendee names",
+*I want to* edit one markdown page in Fingent — `wiki/policies/fr-bewirtung.md` — to say "≥€250 → require attendee names",
 *so that* every future dinner over €250 routes through the document_extractor agent for attendee extraction, and any without attendees lands in review queue, with the wiki page cited as the reason.
 
-> *Example:* Marie pastes the auditor's email into the wiki page edit box. Agnes proposes a 3-line markdown diff with frontmatter `applies_to: dinners | threshold_eur: 250`. Marie commits. Next day, three €280-€340 dinners appear in review queue with the citation; Marie forwards them to the team.
+> *Example:* Marie pastes the auditor's email into the wiki page edit box. Fingent proposes a 3-line markdown diff with frontmatter `applies_to: dinners | threshold_eur: 250`. Marie commits. Next day, three €280-€340 dinners appear in review queue with the citation; Marie forwards them to the team.
 
 **US-6 — Run a goal-driven cash campaign.**
 *As a* CFO who needs to free €15K for a CNC machine by Q3,
-*I want to* tell Agnes the goal in plain English; have the agent propose a campaign that tightens specific envelopes (USC →€40, dinners →€18/head, Finn pause for 1 month) within bounds I've pre-approved; and execute the plan on commit,
+*I want to* tell Fingent the goal in plain English; have the agent propose a campaign that tightens specific envelopes (USC →€40, dinners →€18/head, Finn pause for 1 month) within bounds I've pre-approved; and execute the plan on commit,
 *so that* I run a savings campaign without spending an afternoon in Excel.
 
-> *Example:* Marie types *"Save €15K by 2026-09-30 — don't touch JobRad, don't pause hiring."* Agnes proposes: USC −€10/employee (-€1,200/mo across 120), dinners cap −€3/head (-€2,800/mo), Finn pause for the founders' two cars 30 days (-€2,400), trim Anthropic budget on the marketing agent by 20% (-€800/mo). Total -€7,200/mo over 5 months = €36K. Marie approves the conservative half. The campaign rewrites envelope ceilings in `accounting.db` under the same `write_tx`; every affected employee gets a Slack message; the campaign is auditable as one decision.
+> *Example:* Marie types *"Save €15K by 2026-09-30 — don't touch JobRad, don't pause hiring."* Fingent proposes: USC −€10/employee (-€1,200/mo across 120), dinners cap −€3/head (-€2,800/mo), Finn pause for the founders' two cars 30 days (-€2,400), trim Anthropic budget on the marketing agent by 20% (-€800/mo). Total -€7,200/mo over 5 months = €36K. Marie approves the conservative half. The campaign rewrites envelope ceilings in `accounting.db` under the same `write_tx`; every affected employee gets a Slack message; the campaign is auditable as one decision.
 
 **US-7 — Generate the board pack on Sunday for Monday.**
 *As a* CFO heading into a board call,
@@ -214,7 +214,7 @@ Doesn't see Agnes directly. Sees: a Slack message *"Your €48 USC subscription 
            │
            ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│  AgnesContext + four registries (tools / agents / runners / cond.)   │
+│  FingentContext + four registries (tools / agents / runners / cond.)   │
 │  ↳ Pipelines (YAML, Kahn DAG, fail-fast, cross-run cache)            │
 │  ↳ propose → checkpoint → commit (audit triple)                      │
 └──────────────────────────────────────────────────────────────────────┘
@@ -562,8 +562,8 @@ Sharpens our pitch versus Ramp's AI Spend Intelligence (which tags per team / pr
 Canonical env vars (extends `.env.example`):
 
 ```
-AGNES_DATA_DIR=./data
-AGNES_TENANT_ID=acme-fr
+FINGENT_DATA_DIR=./data
+FINGENT_TENANT_ID=acme-fr
 SWAN_CLIENT_ID=
 SWAN_CLIENT_SECRET=
 SWAN_WEBHOOK_SECRET=
@@ -714,7 +714,7 @@ A self-onboarded design partner CFO of a 100-person Franco-German scale-up:
 
 - The CFO never sees a SQL error, a stack trace, or a JSON payload.
 - The CFO can explain to their auditor in <30 seconds, on a screen-share, why any number on any report is what it is.
-- The Steuerberater / expert-comptable experiences Agnes as a *better-organised expert-comptable, not a replacement* — exports and explanations are at least as good as Pennylane's.
+- The Steuerberater / expert-comptable experiences Fingent as a *better-organised expert-comptable, not a replacement* — exports and explanations are at least as good as Pennylane's.
 - The employee (Paul) sees only a Slack/Telegram tap and a confirmation, never a UI.
 
 ---
@@ -797,7 +797,7 @@ Deliverables:
 - ✅ Updated `README.md`, `CLAUDE.md`, `pitch.md`, `competitive_teardown.md`
 
 Validation:
-- Both tenants close March 2026 books on Agnes (using the shipped `period_close` pipeline + the new wiki citations)
+- Both tenants close March 2026 books on Fingent (using the shipped `period_close` pipeline + the new wiki citations)
 - One auditor walks through the new `audit_pack` and signs off without supplemental requests
 - A campaign-committed change reverses cleanly via a "revert campaign" action
 
@@ -811,7 +811,7 @@ Validation:
 - **Mistral / Cerebras runtime parity.** Already-stubbed `pydantic_ai_runner` and `adk_runner`; activate for cost/latency arbitrage.
 - **Embedding-based wiki retrieval (`qmd`).** Once the wiki crosses ~200 pages per tenant, frontmatter-tag routing won't be enough; switch to `qmd`'s BM25 + vector hybrid.
 - **DD-pack agent for the PE/VC side.** A productized middle-market DD pack — same engine, different audience, replaces the €50–150K Big-4 service line.
-- **Ramp / Brex-class corporate cards** issued natively from Swan, with Agnes-policy enforcement at authorisation time (not just post-auth).
+- **Ramp / Brex-class corporate cards** issued natively from Swan, with Fingent-policy enforcement at authorisation time (not just post-auth).
 - **A "what-if my March wiki had been correct?" backtester.** Replay arbitrary historical periods against current wiki state and surface the deltas — the auditor's dream tool.
 - **Auditor-side product.** A standalone Steuerberater / expert-comptable seat that can flag, comment, and write back to the wiki across multiple client tenants.
 

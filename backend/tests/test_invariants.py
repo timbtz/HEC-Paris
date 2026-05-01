@@ -9,14 +9,14 @@ from __future__ import annotations
 
 import pytest
 
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 from backend.orchestration.tools.gl_poster import post
 from backend.orchestration.tools.invariant_checker import run as check_invariants
 
 
 def _ctx(store, *, node_outputs: dict | None = None,
-         trigger_payload: dict | None = None) -> AgnesContext:
-    return AgnesContext(
+         trigger_payload: dict | None = None) -> FingentContext:
+    return FingentContext(
         run_id=99,
         pipeline_name="test-invariants",
         trigger_source="manual",

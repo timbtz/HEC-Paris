@@ -18,10 +18,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 
 
-async def _resolve_period_dates(ctx: AgnesContext) -> tuple[str, str, str]:
+async def _resolve_period_dates(ctx: FingentContext) -> tuple[str, str, str]:
     """Returns `(period_code, start_date, end_date)`.
 
     Accepts either `trigger_payload.period_code` (looked up in
@@ -59,7 +59,7 @@ async def _resolve_period_dates(ctx: AgnesContext) -> tuple[str, str, str]:
     )
 
 
-async def compute_vat_return(ctx: AgnesContext) -> dict[str, Any]:
+async def compute_vat_return(ctx: FingentContext) -> dict[str, Any]:
     """Box-by-box VAT totals for the period.
 
     Returns:

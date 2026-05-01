@@ -13,7 +13,7 @@ from .server import mcp
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="agnes-mcp", description=__doc__)
+    parser = argparse.ArgumentParser(prog="fingent-mcp", description=__doc__)
     parser.add_argument(
         "--http",
         nargs="?",

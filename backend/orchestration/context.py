@@ -1,4 +1,4 @@
-"""AgnesContext — the per-run handoff between executor, tools, and agents.
+"""FingentContext — the per-run handoff between executor, tools, and agents.
 
 Source: 01_ORCHESTRATION_REFERENCE.md:114-124, RealMetaPRD §6.5 line 547.
 Adapted: drop the per-DB-path fields (we hold StoreHandles instead) and add
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class AgnesContext:
+class FingentContext:
     run_id: int
     pipeline_name: str
     trigger_source: str

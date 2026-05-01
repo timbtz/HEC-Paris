@@ -24,7 +24,7 @@ from typing import Any
 
 from rapidfuzz import fuzz
 
-from ..context import AgnesContext
+from ..context import FingentContext
 from ..store.writes import write_tx
 
 
@@ -62,7 +62,7 @@ def _extract_ibans(tx: dict[str, Any]) -> tuple[str | None, bool]:
 
 
 async def _lookup_identifier(
-    ctx: AgnesContext, identifier_type: str, identifier: str
+    ctx: FingentContext, identifier_type: str, identifier: str
 ) -> int | None:
     """Return `counterparty_id` for an exact (type, identifier) match, or None."""
     cur = await ctx.store.accounting.execute(
@@ -76,7 +76,7 @@ async def _lookup_identifier(
 
 
 async def _fetch_counterparty(
-    ctx: AgnesContext, counterparty_id: int
+    ctx: FingentContext, counterparty_id: int
 ) -> tuple[str | None, str | None]:
     """Return (legal_name, envelope_category) for a counterparty id."""
     cur = await ctx.store.accounting.execute(
@@ -91,7 +91,7 @@ async def _fetch_counterparty(
 
 
 async def _fuzzy_match(
-    ctx: AgnesContext, label: str
+    ctx: FingentContext, label: str
 ) -> tuple[int | None, str | None, int]:
     """Token-set fuzzy match `label` against the top-1000 counterparties.
 
@@ -120,7 +120,7 @@ async def _fuzzy_match(
 
 
 async def _writeback_identifier(
-    ctx: AgnesContext,
+    ctx: FingentContext,
     counterparty_id: int,
     identifier_type: str,
     identifier: str,
@@ -148,7 +148,7 @@ def _miss(method: str = "miss") -> dict[str, Any]:
 
 
 async def _hit(
-    ctx: AgnesContext,
+    ctx: FingentContext,
     counterparty_id: int,
     confidence: float,
     method: str,
@@ -163,7 +163,7 @@ async def _hit(
     }
 
 
-async def run(ctx: AgnesContext) -> dict[str, Any]:
+async def run(ctx: FingentContext) -> dict[str, Any]:
     """Execute the four-stage cascade. Returns the resolution envelope.
 
     `tx = ctx.get('fetch-transaction')` — Swan webhook path.

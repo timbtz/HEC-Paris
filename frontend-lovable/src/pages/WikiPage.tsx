@@ -354,7 +354,7 @@ function RatificationPanel() {
       (
         await apiFetch<{ review_id: number; status: string }>(
           `/wiki/ratifications/${reviewId}/approve`,
-          { method: "POST", headers: { "x-agnes-author": "tim@hec.example" } },
+          { method: "POST", headers: { "x-fingent-author": "tim@hec.example" } },
         )
       ).data,
     onSuccess: (resp) => {

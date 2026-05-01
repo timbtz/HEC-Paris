@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Wallet } from "lucide-react";
 import { CATEGORIES, SPEND_TX, currentPeriod, periodKey } from "@/lib/dataset";
 import { EMPLOYEES } from "@/lib/mocks";
-import { Money, MockedChip } from "@/components/agnes/primitives";
+import { Money, MockedChip } from "@/components/fingent/primitives";
 import { cn } from "@/lib/utils";
 
 export default function BudgetsPage() {

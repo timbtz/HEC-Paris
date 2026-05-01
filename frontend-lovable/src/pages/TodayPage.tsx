@@ -10,8 +10,8 @@ import {
   CircleAlert,
 } from "lucide-react";
 import { useDashboard } from "@/store/dashboard";
-import { useTraceDrawer } from "@/components/agnes/TraceDrawerContext";
-import { ConfidenceBar, EmptyState, LiveDot, MicroUsd, MockedChip, Money, RelTime, StatusBadge } from "@/components/agnes/primitives";
+import { useTraceDrawer } from "@/components/fingent/TraceDrawerContext";
+import { ConfidenceBar, EmptyState, LiveDot, MicroUsd, MockedChip, Money, RelTime, StatusBadge } from "@/components/fingent/primitives";
 import { fetchAiSpendToday, fetchRecentRuns } from "@/lib/endpoints";
 import type { AiSpendToday, RunSummary } from "@/lib/types";
 import { cn } from "@/lib/utils";

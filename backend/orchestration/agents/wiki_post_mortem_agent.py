@@ -24,7 +24,7 @@ import json
 from datetime import datetime, timezone
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 from ..registries import default_runner, get_runner
 from ..runners.base import AgentResult
 from ..tools import wiki_reader as wiki_reader_tool
@@ -92,7 +92,7 @@ def _today_period_label() -> str:
 
 
 def _compute_path_and_frontmatter(
-    ctx: AgnesContext,
+    ctx: FingentContext,
 ) -> tuple[str, WikiFrontmatter, str | None]:
     """Deterministic path + frontmatter for this run's post-mortem page.
 
@@ -120,7 +120,7 @@ def _compute_path_and_frontmatter(
 
 
 def _synthesize_offline_body(
-    ctx: AgnesContext, period_id: str, summary_json: str,
+    ctx: FingentContext, period_id: str, summary_json: str,
 ) -> str:
     """Deterministic fallback post-mortem body when no LLM was available.
 
@@ -171,7 +171,7 @@ def _synthesize_offline_body(
     return "\n".join(lines)
 
 
-def _summarize_anomalies(ctx: AgnesContext) -> str:
+def _summarize_anomalies(ctx: FingentContext) -> str:
     """Compact JSON snapshot of the upstream anomalies + period summary."""
     anomalies_node = ctx.get("flag-anomalies") or {}
     summary_node = ctx.get("summarize-period") or {}
@@ -195,7 +195,7 @@ def _summarize_anomalies(ctx: AgnesContext) -> str:
     return json.dumps(payload, default=str, separators=(",", ":"))
 
 
-async def run(ctx: AgnesContext) -> AgentResult:
+async def run(ctx: FingentContext) -> AgentResult:
     """Draft a post-mortem; return AgentResult whose `output` carries the page draft."""
     path, frontmatter, period_id = _compute_path_and_frontmatter(ctx)
 

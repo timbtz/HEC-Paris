@@ -81,7 +81,7 @@ function NavGroup({ label, items, locationPath, reviewCount }: { label: string; 
   );
 }
 
-export function AgnesSidebar() {
+export function FingentSidebar() {
   const conn = useDashboard((s) => s.conn);
   const reviewCount = useDashboard((s) => s.reviewIds.size);
   const location = useLocation();
@@ -95,7 +95,7 @@ export function AgnesSidebar() {
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
         </div>
         <div className="leading-tight">
-          <div className="text-[15px] font-semibold tracking-tight">Agnes</div>
+          <div className="text-[15px] font-semibold tracking-tight">Fingent</div>
           <div className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Autonomous CFO</div>
         </div>
       </div>

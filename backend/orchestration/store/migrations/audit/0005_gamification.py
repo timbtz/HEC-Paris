@@ -1,10 +1,10 @@
 """Phase 4.B: gamification layer (DailyAI port, single-tenant flavour).
 
-Source: TACL-GROUP/pulse-ai-grow (`.lovable/plan.md`) ported into Agnes
+Source: TACL-GROUP/pulse-ai-grow (`.lovable/plan.md`) ported into Fingent
 without the Supabase/RLS/multi-tenant scaffolding. Their `workspaces`,
-`profiles`, `user_roles`, `invitations` tables collapse because Agnes is
+`profiles`, `user_roles`, `invitations` tables collapse because Fingent is
 already single-tenant — `employees.email` is the implicit identity, and
-`x-agnes-author` is the auth seam (same convention as wiki writes).
+`x-fingent-author` is the auth seam (same convention as wiki writes).
 
 Adds to `audit.db`:
 

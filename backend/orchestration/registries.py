@@ -107,7 +107,7 @@ _REGISTRIES: dict[str, dict[str, str]] = {
 def default_runner() -> str:
     """Return the runner-registry key for the configured classifier provider.
 
-    Reads ``AGNES_LLM_PROVIDER`` at call time (not import time) so tests
+    Reads ``FINGENT_LLM_PROVIDER`` at call time (not import time) so tests
     can flip the env var with ``monkeypatch.setenv`` without re-importing.
 
     Mapping:
@@ -117,7 +117,7 @@ def default_runner() -> str:
       - ``adk``      -> ``adk`` (no live impl yet; future ADK runner).
       - default / unknown -> ``anthropic``.
     """
-    provider = os.environ.get("AGNES_LLM_PROVIDER", "anthropic").lower()
+    provider = os.environ.get("FINGENT_LLM_PROVIDER", "anthropic").lower()
     if provider == "cerebras":
         return "pydantic_ai"
     if provider == "adk":
@@ -140,14 +140,14 @@ def default_cerebras_model(role: str) -> str:
     Both defaults are picked because they're reachable on a free-tier
     Cerebras key — `gpt-oss-120b` and `llama3.3-70b` require Developer
     tier. Override at runtime when you upgrade:
-      AGNES_CEREBRAS_CLASSIFIER_MODEL=gpt-oss-120b
-      AGNES_CEREBRAS_ANOMALY_MODEL=gpt-oss-120b
+      FINGENT_CEREBRAS_CLASSIFIER_MODEL=gpt-oss-120b
+      FINGENT_CEREBRAS_ANOMALY_MODEL=gpt-oss-120b
     """
     if role == "classifier":
-        return os.environ.get("AGNES_CEREBRAS_CLASSIFIER_MODEL", "llama3.1-8b")
+        return os.environ.get("FINGENT_CEREBRAS_CLASSIFIER_MODEL", "llama3.1-8b")
     if role == "anomaly":
         return os.environ.get(
-            "AGNES_CEREBRAS_ANOMALY_MODEL",
+            "FINGENT_CEREBRAS_ANOMALY_MODEL",
             "qwen-3-235b-a22b-instruct-2507",
         )
-    return os.environ.get("AGNES_CEREBRAS_DEFAULT_MODEL", "llama3.1-8b")
+    return os.environ.get("FINGENT_CEREBRAS_DEFAULT_MODEL", "llama3.1-8b")

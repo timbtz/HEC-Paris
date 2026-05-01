@@ -13,12 +13,12 @@ import asyncio
 import pytest
 
 from backend.orchestration import event_bus
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 from backend.orchestration.tools.gl_poster import post
 
 
-def _ctx(store, *, node_outputs: dict | None = None) -> AgnesContext:
-    return AgnesContext(
+def _ctx(store, *, node_outputs: dict | None = None) -> FingentContext:
+    return FingentContext(
         run_id=42,
         pipeline_name="test-poster",
         trigger_source="manual",

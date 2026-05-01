@@ -5,12 +5,12 @@ from backend.orchestration.conditions.counterparty import unresolved
 from backend.orchestration.conditions import documents as cond_documents
 from backend.orchestration.conditions import gating as cond_gating
 from backend.orchestration.conditions.gl import unclassified
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 
 
-def _ctx(node_outputs: dict) -> AgnesContext:
+def _ctx(node_outputs: dict) -> FingentContext:
     # store is unused by pure conditions; pass None.
-    return AgnesContext(
+    return FingentContext(
         run_id=1,
         pipeline_name="test-conditions",
         trigger_source="manual",

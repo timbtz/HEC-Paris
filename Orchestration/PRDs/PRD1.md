@@ -116,7 +116,7 @@ produce data that a frontend *can* render, but ships no UI.
 - ✅ YAML pipeline DSL: nodes, depends_on, when (named condition), tool/agent ref
 - ✅ DAG parser using Kahn's algorithm; reject cycles at parse time (`PRD.md:169`)
 - ✅ DAG executor: per-layer `asyncio.gather`, fail-fast within a run
-- ✅ `AgnesContext` dataclass: run_id, pipeline_name, db handles, employee_id, node_outputs, trigger_payload
+- ✅ `FingentContext` dataclass: run_id, pipeline_name, db handles, employee_id, node_outputs, trigger_payload
 - ✅ Tool registry (`_TOOL_REGISTRY: dict[str, str]`, lazy import — see `PRD.md:170`)
 - ✅ Agent-runtime registry (pluggable — see Q3 decision §7)
 - ✅ Named-condition registry (`when:` references a Python `def cond(ctx) -> bool`, never an expression string — `PRD.md:173`)
@@ -256,7 +256,7 @@ produce data that a frontend *can* render, but ships no UI.
 ```
 orchestration/
   __init__.py
-  context.py              # AgnesContext dataclass
+  context.py              # FingentContext dataclass
   dag.py                  # Kahn parser; topo layers; cycle detection
   executor.py             # async layer-by-layer runner
   registries.py           # _TOOL_REGISTRY, _CONDITION_REGISTRY, _RUNNER_REGISTRY
@@ -316,11 +316,11 @@ nodes:
 DSL conventions follow `Dev orchestration/_exports_for_b2b_accounting/02_YAML_WORKFLOW_DSL.md`
 (open this file when implementing the parser; do not load into context until then).
 
-### 6.3 `AgnesContext`
+### 6.3 `FingentContext`
 
 ```python
 @dataclass
-class AgnesContext:
+class FingentContext:
     run_id: int
     pipeline_name: str
     pipeline_version: int
@@ -561,7 +561,7 @@ themselves by appending to a dict in `tools/__init__.py`.
 ### 7.3 Named-Condition Registry
 
 ```python
-_CONDITION_REGISTRY: dict[str, Callable[[AgnesContext], bool]] = {}
+_CONDITION_REGISTRY: dict[str, Callable[[FingentContext], bool]] = {}
 ```
 
 `when:` strings in YAML resolve here. Conditions must be **pure** and
@@ -574,7 +574,7 @@ class AgentRunner(Protocol):
     name: ClassVar[str]
     async def run(
         self,
-        ctx: AgnesContext,
+        ctx: FingentContext,
         node_id: str,
         spec: AgentSpec,
     ) -> AgentResult: ...
@@ -746,7 +746,7 @@ deployment can ship without either.
 - `.env.local` for `ANTHROPIC_API_KEY`, `CEREBRAS_API_KEY` (optional),
   `GOOGLE_API_KEY` (optional). Loader rejects on startup if a runner is
   registered without its key present.
-- DBs live under a configurable `AGNES_DATA_DIR` (default `./data/`).
+- DBs live under a configurable `FINGENT_DATA_DIR` (default `./data/`).
 - `external_events.payload` may contain PII; PRD1 stores it raw — frontend
   redaction is downstream.
 
@@ -778,11 +778,11 @@ async with open_dbs(data_dir="./data/") as dbs:
 
 ```bash
 # CLI (thin click/argparse wrapper)
-agnes run echo --payload '{"hello": "world"}' --employee 42
-agnes runs list --pipeline echo --limit 20
-agnes events show <run_id>
-agnes cache stats
-agnes costs month --month 2026-03
+fingent run echo --payload '{"hello": "world"}' --employee 42
+fingent runs list --pipeline echo --limit 20
+fingent events show <run_id>
+fingent cache stats
+fingent costs month --month 2026-03
 ```
 
 ---
@@ -843,7 +843,7 @@ agnes costs month --month 2026-03
 - ✅ Unit tests for cycle detection and registry resolution failures
 
 ### Phase 1.C — Executor (no caching, no audit yet)
-- ✅ `AgnesContext` dataclass
+- ✅ `FingentContext` dataclass
 - ✅ Layer-by-layer `asyncio.gather`, fail-fast
 - ✅ `pipeline_runs` + `pipeline_events` writes via single-writer locks
 - ✅ Test: `noop_demo.yaml` produces the expected event sequence
@@ -871,7 +871,7 @@ agnes costs month --month 2026-03
       `agent_decisions.runner` correctly
 
 ### Phase 1.G — CLI + docs
-- ✅ `agnes` CLI commands from §10
+- ✅ `fingent` CLI commands from §10
 - ✅ A short `README` in `orchestration/` (not a top-level repo doc)
 
 ---

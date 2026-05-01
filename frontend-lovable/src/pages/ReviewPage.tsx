@@ -8,8 +8,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight, Inbox, RefreshCw } from "lucide-react";
 import { fetchJournalEntries } from "@/lib/endpoints";
-import { useTraceDrawer } from "@/components/agnes/TraceDrawerContext";
-import { Money, RelTime, EmptyState } from "@/components/agnes/primitives";
+import { useTraceDrawer } from "@/components/fingent/TraceDrawerContext";
+import { Money, RelTime, EmptyState } from "@/components/fingent/primitives";
 import { Button } from "@/components/ui/button";
 
 export default function ReviewPage() {

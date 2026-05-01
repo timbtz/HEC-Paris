@@ -10,7 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, ChevronDown, Eye, Play, Zap } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import { fetchRecentRuns } from "@/lib/endpoints";
-import { MicroUsd, RelTime } from "@/components/agnes/primitives";
+import { MicroUsd, RelTime } from "@/components/fingent/primitives";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {

@@ -9,10 +9,10 @@ null counterparty_id).
 """
 from __future__ import annotations
 
-from ..context import AgnesContext
+from ..context import FingentContext
 
 
-def unresolved(ctx: AgnesContext) -> bool:
+def unresolved(ctx: FingentContext) -> bool:
     """True iff the resolver returned no counterparty.
 
     Routes the AI fallback agent. Tolerates a missing node entirely (returns

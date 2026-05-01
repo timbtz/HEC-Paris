@@ -13,12 +13,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 
 _RETAINED_EARNINGS_CODE = "120"
 
 
-async def _existing_close(ctx: AgnesContext, period_code: str) -> bool:
+async def _existing_close(ctx: FingentContext, period_code: str) -> bool:
     cur = await ctx.store.accounting.execute(
         "SELECT 1 FROM period_reports "
         "WHERE period_code = ? AND report_type = 'year_end_close' "
@@ -30,7 +30,7 @@ async def _existing_close(ctx: AgnesContext, period_code: str) -> bool:
     return row is not None
 
 
-async def build_closing_entry(ctx: AgnesContext) -> dict[str, Any]:
+async def build_closing_entry(ctx: FingentContext) -> dict[str, Any]:
     """Build the year-end closing journal entry.
 
     Reads the trial balance from `ctx.get('compute-trial-balance')`. For

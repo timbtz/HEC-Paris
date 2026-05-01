@@ -9,7 +9,7 @@ from the right files etc.
 
 ## Feature Description
 
-Wire Cerebras inference into the Agnes Autonomous CFO agent stack via the
+Wire Cerebras inference into the Fingent Autonomous CFO agent stack via the
 already-stubbed `PydanticAiRunner`, then migrate three high-ROI classifier
 agents (anomaly flagging, GL account assignment, counterparty
 classification) from Anthropic Sonnet to Cerebras `gpt-oss-120b`. The
@@ -31,7 +31,7 @@ and report narration is a separate net-new feature, not a runner swap.
 
 ## User Story
 
-As an Agnes operator running period-close + Swan-driven booking pipelines
+As an Fingent operator running period-close + Swan-driven booking pipelines
 I want classifier agents to run on Cerebras' open-weight models at ~2,000 tok/s
 So that classification latency drops 10–20× (Sonnet ~250ms → Cerebras ~25ms),
    per-call cost drops 5–50× (Sonnet $3/$15 per 1M → gpt-oss-120b $0.35/$0.75
@@ -73,7 +73,7 @@ them. Mirror the response-extraction logic from `AnthropicRunner` so the
 returned dict slots straight into the existing `run()` wrapper.
 
 Add a one-line `_default_runner()` helper in `registries.py` that reads
-`AGNES_LLM_PROVIDER` (default `anthropic`) and returns `"anthropic"` or
+`FINGENT_LLM_PROVIDER` (default `anthropic`) and returns `"anthropic"` or
 `"pydantic_ai"`. The three target classifier agents replace their
 hard-coded `get_runner("anthropic")` with `get_runner(_default_runner())`.
 The vision-bound `document_extractor.py` keeps its hard-coded `"anthropic"`.
@@ -317,7 +317,7 @@ captured.
 
 **Tasks:**
 - Add `_default_runner()` to `registries.py` — reads
-  `AGNES_LLM_PROVIDER` env, returns `"anthropic"` (default) or
+  `FINGENT_LLM_PROVIDER` env, returns `"anthropic"` (default) or
   `"pydantic_ai"` (when env=`cerebras`).
 - Migrate `anomaly_flag_agent.py:114` to call
   `get_runner(_default_runner())` and update the model string to
@@ -329,8 +329,8 @@ captured.
   providers (set the env var explicitly per run).
 
 **Validation gate (Phase 3 → 4):** anomaly agent passes its existing
-test suite under both `AGNES_LLM_PROVIDER=anthropic` and
-`AGNES_LLM_PROVIDER=cerebras`; the second mode requires a live
+test suite under both `FINGENT_LLM_PROVIDER=anthropic` and
+`FINGENT_LLM_PROVIDER=cerebras`; the second mode requires a live
 `CEREBRAS_API_KEY` (skip with `pytest.mark.skipif` if not present).
 A manual period-close trigger via the existing
 `backend/scripts/replay_swan_seed.py` produces an `agent_costs` row
@@ -397,9 +397,9 @@ atomic and independently testable.
 - **IMPLEMENT**: Append two lines:
   ```
   # Cerebras inference (gpt-oss-120b classifier path; required when
-  # AGNES_LLM_PROVIDER=cerebras). Get one at https://cloud.cerebras.ai
+  # FINGENT_LLM_PROVIDER=cerebras). Get one at https://cloud.cerebras.ai
   CEREBRAS_API_KEY=
-  AGNES_LLM_PROVIDER=anthropic
+  FINGENT_LLM_PROVIDER=anthropic
   ```
 - **PATTERN**: Match the existing `ANTHROPIC_API_KEY=` placeholder
   style in the same file.
@@ -717,12 +717,12 @@ atomic and independently testable.
   import os
 
   def default_runner() -> str:
-      """Read AGNES_LLM_PROVIDER and return a runner-registry key.
+      """Read FINGENT_LLM_PROVIDER and return a runner-registry key.
 
       'anthropic' (default), 'cerebras' -> 'pydantic_ai',
       'adk' -> 'adk' (kept for completeness; no live impl yet).
       """
-      provider = os.environ.get("AGNES_LLM_PROVIDER", "anthropic").lower()
+      provider = os.environ.get("FINGENT_LLM_PROVIDER", "anthropic").lower()
       if provider == "cerebras":
           return "pydantic_ai"
       if provider == "adk":
@@ -750,19 +750,19 @@ atomic and independently testable.
   from backend.orchestration.registries import default_runner
 
   def test_defaults_to_anthropic_when_unset(monkeypatch):
-      monkeypatch.delenv("AGNES_LLM_PROVIDER", raising=False)
+      monkeypatch.delenv("FINGENT_LLM_PROVIDER", raising=False)
       assert default_runner() == "anthropic"
 
   def test_cerebras_maps_to_pydantic_ai(monkeypatch):
-      monkeypatch.setenv("AGNES_LLM_PROVIDER", "cerebras")
+      monkeypatch.setenv("FINGENT_LLM_PROVIDER", "cerebras")
       assert default_runner() == "pydantic_ai"
 
   def test_anthropic_explicit(monkeypatch):
-      monkeypatch.setenv("AGNES_LLM_PROVIDER", "anthropic")
+      monkeypatch.setenv("FINGENT_LLM_PROVIDER", "anthropic")
       assert default_runner() == "anthropic"
 
   def test_unknown_value_falls_back_to_anthropic(monkeypatch):
-      monkeypatch.setenv("AGNES_LLM_PROVIDER", "foobar")
+      monkeypatch.setenv("FINGENT_LLM_PROVIDER", "foobar")
       assert default_runner() == "anthropic"
   ```
 - **PATTERN**: pytest + monkeypatch fixture, no fixtures shared with
@@ -804,12 +804,12 @@ atomic and independently testable.
   function — it must read env at request time so a single process can
   serve both providers (e.g., tests that flip the flag).
 - **VALIDATE**:
-  - `AGNES_LLM_PROVIDER=anthropic pytest
+  - `FINGENT_LLM_PROVIDER=anthropic pytest
     backend/tests/test_anomaly_flag_agent.py -x --timeout=15`
-  - With a real key set: `AGNES_LLM_PROVIDER=cerebras
+  - With a real key set: `FINGENT_LLM_PROVIDER=cerebras
     CEREBRAS_API_KEY=$CEREBRAS_API_KEY pytest
     backend/tests/test_anomaly_flag_agent.py -x --timeout=15`
-  - Manual: `AGNES_LLM_PROVIDER=cerebras python
+  - Manual: `FINGENT_LLM_PROVIDER=cerebras python
     backend/scripts/replay_swan_seed.py` (run period_close trigger),
     then SQL: `sqlite3 data/audit.db "SELECT provider, model,
     cost_micro_usd FROM agent_costs ORDER BY id DESC LIMIT 1"` →
@@ -860,9 +860,9 @@ Before proceeding to step 12, ensure:
   - The cache writeback to `account_rules` (lines 50–73) is unaffected
     by the runner swap.
 - **VALIDATE**:
-  - `AGNES_LLM_PROVIDER=anthropic pytest -k gl_account_classifier
+  - `FINGENT_LLM_PROVIDER=anthropic pytest -k gl_account_classifier
     --timeout=15`
-  - `AGNES_LLM_PROVIDER=cerebras pytest -k gl_account_classifier
+  - `FINGENT_LLM_PROVIDER=cerebras pytest -k gl_account_classifier
     --timeout=15` (with `CEREBRAS_API_KEY` set; otherwise `pytest.mark
     .skipif`).
 
@@ -899,9 +899,9 @@ Before proceeding to step 12, ensure:
     `counterparty_identifiers` with `source='ai'`. Unaffected by
     the runner swap.
 - **VALIDATE**:
-  - `AGNES_LLM_PROVIDER=anthropic pytest -k counterparty_classifier
+  - `FINGENT_LLM_PROVIDER=anthropic pytest -k counterparty_classifier
     --timeout=15`
-  - `AGNES_LLM_PROVIDER=cerebras` integration: a Swan-replay run
+  - `FINGENT_LLM_PROVIDER=cerebras` integration: a Swan-replay run
     from `backend/scripts/replay_swan_seed.py`. Confirm the
     `counterparty_identifiers` table grows by at least one
     `source='ai'` row, AND `data/audit.db` has the corresponding
@@ -942,7 +942,7 @@ Before proceeding to step 12, ensure:
   and add a bullet:
   > Cerebras runner (`PydanticAiRunner`, raw OpenAI-compat against
   > `https://api.cerebras.ai/v1`) live for the three classifier agents
-  > (anomaly, GL, counterparty) when `AGNES_LLM_PROVIDER=cerebras`.
+  > (anomaly, GL, counterparty) when `FINGENT_LLM_PROVIDER=cerebras`.
   > `claude-sonnet-4-6` remains the default until Phase-2 validation
   > closes; `document_extractor` stays on Anthropic (vision-only).
 - **PATTERN**: Match the surrounding bullet style and the project's
@@ -956,7 +956,7 @@ Before proceeding to step 12, ensure:
 
 - **IMPLEMENT**: Add to the "Hard rules carried over from RealMetaPRD"
   section:
-  > `AGNES_LLM_PROVIDER=anthropic|cerebras` (default `anthropic`)
+  > `FINGENT_LLM_PROVIDER=anthropic|cerebras` (default `anthropic`)
   > picks the classifier runner. Setting `cerebras` requires
   > `CEREBRAS_API_KEY` and routes anomaly_flag, gl_account_classifier,
   > and counterparty_classifier through `PydanticAiRunner`. Vision
@@ -968,7 +968,7 @@ Before proceeding to step 12, ensure:
   prescriptive sentences.
 - **IMPORTS**: N/A.
 - **GOTCHA**: None.
-- **VALIDATE**: `grep -i AGNES_LLM_PROVIDER CLAUDE.md` returns the new
+- **VALIDATE**: `grep -i FINGENT_LLM_PROVIDER CLAUDE.md` returns the new
   bullet.
 
 ### 17. RUN full test suite + manual smoke
@@ -977,12 +977,12 @@ Before proceeding to step 12, ensure:
   ```bash
   uv run pytest backend/tests/ --timeout=15 -q
   ```
-  Poll for completion. With `AGNES_LLM_PROVIDER=anthropic` (default)
+  Poll for completion. With `FINGENT_LLM_PROVIDER=anthropic` (default)
   no Cerebras key is needed and no live calls fire.
 
   Then with a real key set:
   ```bash
-  AGNES_LLM_PROVIDER=cerebras CEREBRAS_API_KEY=$CEREBRAS_API_KEY \
+  FINGENT_LLM_PROVIDER=cerebras CEREBRAS_API_KEY=$CEREBRAS_API_KEY \
       uv run python backend/scripts/replay_swan_seed.py
   ```
   After the replay, query `data/audit.db`:
@@ -1023,7 +1023,7 @@ All in `backend/tests/test_cerebras_runner.py` and
 Scope:
 - Existing `test_anomaly_flag_agent.py`, `test_counterparty_classifier.py`,
   `test_gl_account_classifier_agent.py` (whichever exist) run under
-  both `AGNES_LLM_PROVIDER=anthropic` and `=cerebras`. The Cerebras
+  both `FINGENT_LLM_PROVIDER=anthropic` and `=cerebras`. The Cerebras
   runs `pytest.mark.skipif(not os.environ.get("CEREBRAS_API_KEY"))`.
 - `backend/scripts/replay_swan_seed.py` end-to-end with the flag set
   to `cerebras` — confirms Swan webhook → Cerebras classifiers →
@@ -1092,7 +1092,7 @@ uv run pytest backend/tests/test_anomaly_flag_agent.py \
               -x --timeout=15
 
 # Cerebras mode — requires a live key.
-AGNES_LLM_PROVIDER=cerebras CEREBRAS_API_KEY=$CEREBRAS_API_KEY \
+FINGENT_LLM_PROVIDER=cerebras CEREBRAS_API_KEY=$CEREBRAS_API_KEY \
     uv run pytest -k "cerebras or anomaly or counterparty or gl_account" \
                   --timeout=15
 ```
@@ -1105,7 +1105,7 @@ background** and be polled — never blocking the foreground tool call.
 
 ```bash
 # Phase-1 smoke: replay the Swan seed under Cerebras.
-AGNES_LLM_PROVIDER=cerebras CEREBRAS_API_KEY=$CEREBRAS_API_KEY \
+FINGENT_LLM_PROVIDER=cerebras CEREBRAS_API_KEY=$CEREBRAS_API_KEY \
     uv run python backend/scripts/replay_swan_seed.py
 
 # Confirm provider attribution.
@@ -1158,13 +1158,13 @@ SQL
 - [ ] `cost.py` `micro_usd` charges `reasoning_tokens` at the output
   rate; existing Anthropic rows unaffected (always 0 reasoning).
 - [ ] `default_runner()` exists in `registries.py` and reads
-  `AGNES_LLM_PROVIDER` at call time.
+  `FINGENT_LLM_PROVIDER` at call time.
 - [ ] `anomaly_flag_agent.py`, `gl_account_classifier_agent.py`, and
   `counterparty_classifier.py` route via `default_runner()` with the
   appropriate per-provider model string.
 - [ ] `document_extractor.py` is unchanged (still hard-coded
   `"anthropic"`).
-- [ ] An end-to-end Swan replay under `AGNES_LLM_PROVIDER=cerebras`
+- [ ] An end-to-end Swan replay under `FINGENT_LLM_PROVIDER=cerebras`
   produces `agent_decisions` rows with `runner='pydantic_ai'`,
   `model='gpt-oss-120b'`, `response_id` non-null, `latency_ms` >0,
   AND matching `agent_costs` rows with `provider='cerebras'`,
@@ -1173,11 +1173,11 @@ SQL
   per `(employee_id, provider)` pair with non-zero `micro_usd` for
   the Cerebras pair.
 - [ ] Full pytest suite green under default provider; targeted suite
-  green under `AGNES_LLM_PROVIDER=cerebras` with a live key.
+  green under `FINGENT_LLM_PROVIDER=cerebras` with a live key.
 - [ ] `README.md` and `CLAUDE.md` reflect the live runner state and
   the new env vars.
 - [ ] `.env.example` includes `CEREBRAS_API_KEY` and
-  `AGNES_LLM_PROVIDER`.
+  `FINGENT_LLM_PROVIDER`.
 
 ---
 

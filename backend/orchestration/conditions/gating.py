@@ -6,19 +6,19 @@ Phase 1 ships these as stubs so Phase D pipelines drop in cleanly.
 """
 from __future__ import annotations
 
-from ..context import AgnesContext
+from ..context import FingentContext
 
 
-def passes_confidence(ctx: AgnesContext) -> bool:
+def passes_confidence(ctx: FingentContext) -> bool:
     out = ctx.get("gate-confidence") or {}
     return bool(out.get("ok"))
 
 
-def needs_review(ctx: AgnesContext) -> bool:
+def needs_review(ctx: FingentContext) -> bool:
     out = ctx.get("gate-confidence") or {}
     return bool(out) and not out.get("ok")
 
 
-def posted(ctx: AgnesContext) -> bool:
+def posted(ctx: FingentContext) -> bool:
     out = ctx.get("post-entry") or {}
     return out.get("status") == "posted"

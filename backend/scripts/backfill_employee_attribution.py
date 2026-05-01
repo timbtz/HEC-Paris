@@ -6,7 +6,7 @@ swan transaction id as `resourceId`, which never matches a real account — so
 every replay-triggered run landed with `pipeline_runs.employee_id_logical=NULL`
 and every `agent_costs.employee_id=NULL`.
 
-Once the resolver is fixed (hash-fallback gated on AGNES_SWAN_LOCAL_REPLAY),
+Once the resolver is fixed (hash-fallback gated on FINGENT_SWAN_LOCAL_REPLAY),
 new traffic attributes correctly. This script retroactively applies the same
 hash fallback to historical NULL rows so the killer SQL ("per-employee
 Anthropic spend") returns full coverage on the demo dataset.
@@ -145,6 +145,6 @@ async def main(data_dir: Path) -> dict[str, int]:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     import os
-    data_dir = Path(os.environ.get("AGNES_DATA_DIR", "./data")).resolve()
+    data_dir = Path(os.environ.get("FINGENT_DATA_DIR", "./data")).resolve()
     summary = asyncio.run(main(data_dir))
     logger.info("backfill.complete %s", summary)

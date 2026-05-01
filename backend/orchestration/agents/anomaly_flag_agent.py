@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 from ..registries import default_cerebras_model, default_runner, get_runner
 from ..runners.base import AgentResult
 from ..tools import wiki_reader as wiki_reader_tool
@@ -31,7 +31,7 @@ _ANOMALY_KINDS = (
 )
 
 
-def _build_summary(ctx: AgnesContext) -> str:
+def _build_summary(ctx: FingentContext) -> str:
     trial = ctx.get("compute-trial-balance") or {}
     open_entries = ctx.get("compute-open-entries") or {}
     vat = ctx.get("compute-vat") or {}
@@ -56,7 +56,7 @@ def _build_summary(ctx: AgnesContext) -> str:
     return json.dumps(payload, default=str, separators=(",", ":"))
 
 
-async def run(ctx: AgnesContext) -> AgentResult:
+async def run(ctx: FingentContext) -> AgentResult:
     tool = {
         "name": "submit_anomalies",
         "description": (

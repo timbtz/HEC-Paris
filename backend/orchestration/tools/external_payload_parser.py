@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 
 
 def _provider_from_trigger(trigger_source: str | None) -> str | None:
@@ -47,7 +47,7 @@ def _parse_stripe(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-async def run(ctx: AgnesContext) -> dict[str, Any]:
+async def run(ctx: FingentContext) -> dict[str, Any]:
     payload = ctx.trigger_payload or {}
     provider = _provider_from_trigger(ctx.trigger_source)
 

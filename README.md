@@ -1,15 +1,45 @@
-# Agnes
+# Fingent
 
 YAML-driven DAG executor over a three-database SQLite backbone, with an
-audit/cost spine that records every agent decision against an employee.
+audit/cost spine that records every agent decision — and every cent of
+provider spend — against an individual employee. The wedge: when an
+Anthropic invoice lands, you can answer **"who ordered which workflow"**
+in a single SQL `GROUP BY`. See `Orchestration/pitch/pitch_v2_hg.md`
+for the customer-facing framing.
 
-**Status:** Phase 1 (metalayer foundation), Phase 2 (Swan webhook →
-live ledger, PDF invoice → accrual, internal API surface with SSE, demo
-seed dataset, Vite/React dashboard) and Phase 3 (reporting layer:
-SQL-only `/reports/*` endpoints, three agentic reporting pipelines —
-`period_close`, `vat_return`, `year_end_close` — and the frontend
-"Reports" tab) are complete. The frontend lives under `frontend/` and is
-wired to the backend via a Vite dev proxy.
+**Status.** All four phases live:
+- **Phase 1** — metalayer foundation (three SQLite DBs with single-writer
+  locks, YAML pipeline DSL + DAG executor, registries, prompt-hash, audit
+  spine, in-process event bus).
+- **Phase 2** — Swan webhook → live ledger, PDF invoice → accrual, demo
+  seed dataset, Vite/React dashboard.
+- **Phase 3** — reporting layer: six SQL-only `/reports/*` endpoints,
+  three agentic reporting pipelines (`period_close`, `vat_return`,
+  `year_end_close`), period-lock enforcement on `gl_poster.post`,
+  frontend "Reports" tab.
+- **Phase 4.A** — self-improving Living Rule Wiki (Karpathy-style
+  markdown corpus the agents both read and write back to). Every
+  reasoning agent loads role-tagged pages before constructing its
+  prompt, threads the `(page_id, revision_id)` tuples into the
+  prompt-hash and the `agent_decisions` row, and every closing pipeline
+  files a post-mortem back into the wiki. CFO can edit policies through
+  `POST /wiki/pages` / `PUT /wiki/pages/{id}`.
+- **Phase 4.B** — gamification layer: per-call coin auto-credit on every
+  `agent_decisions` insert (one `write_tx`, idempotent on
+  `agent_decision_id`), leaderboard, rewards, redemptions, manager
+  approval queue, "Adoption" frontend tab.
+
+**MCP edition.** `backend/mcp/` is a FastMCP server that wraps the
+FastAPI routers in-process via httpx ASGI — no business-logic
+duplication. Exposes pipeline run/inspect, GL queries, approvals, and
+wiki reads to MCP clients. Run with `python -m backend.mcp` (stdio) or
+`python -m backend.mcp --http`. Optional dep: `uv sync --extra mcp`.
+
+**Frontends.** Two live in the tree. `frontend-lovable/` is **primary**
+(Vite + React 18 + shadcn/ui + Radix + TanStack Query + Zustand,
+includes the Adoption tab and the AdoptionStrip on the AI-Spend page).
+`frontend/` is kept secondary for reference (Tailwind v4 stack). Both
+proxy every backend prefix to the FastAPI dev server.
 
 ## What works today
 
@@ -28,7 +58,14 @@ wired to the backend via a Vite dev proxy.
   `accounting/0001..0009` (init, chart of accounts, account rules,
   envelope_category, demo counterparties, demo swan transactions,
   envelopes, review_queue, periods + VAT seed + retained earnings CoA),
-  `audit/0001..0003`, `orchestration/0001`.
+  `audit/0001..0005` (init, seed employees, swan_iban links,
+  `wiki_page_id` / `wiki_revision_id` columns on `agent_decisions`,
+  gamification — adds `employees.is_manager` plus the five tables
+  `gamification_tasks` / `task_completions` / `rewards` /
+  `reward_redemptions` / `coin_adjustments`, seeds Tim as manager + 9
+  demo tasks + 4 demo rewards), and `orchestration/0001..0004`
+  (init, `wiki_pages`, `wiki_revisions`, FTS5 contentless virtual
+  table for BM25 search).
 - **YAML pipeline DSL + DAG executor.** Kahn topological-layer build,
   fail-fast cancellation, strict-key validation, filename-must-match-
   name rule, named conditions, cross-run cache writes after success.
@@ -42,7 +79,7 @@ wired to the backend via a Vite dev proxy.
 - **Cerebras runner** (`PydanticAiRunner`, raw `AsyncOpenAI` against
   `https://api.cerebras.ai/v1`, `timeout=4.0`). Live for the three
   classifier agents (anomaly, GL, counterparty) when
-  `AGNES_LLM_PROVIDER=cerebras` (default `anthropic`). Translates the
+  `FINGENT_LLM_PROVIDER=cerebras` (default `anthropic`). Translates the
   agents' Anthropic-shape tool dicts to OpenAI shape with
   `additionalProperties:false` recursive injection (`strict=true`,
   `parallel_tool_calls=false`). `claude-sonnet-4-6` remains the default
@@ -58,7 +95,7 @@ wired to the backend via a Vite dev proxy.
   cache, refresh-on-401-and-retry) and `SwanGraphQLClient`
   (httpx-based, `fetch_transaction`, `fetch_account`,
   `handle_mutation_result` for the union-error pattern).
-- **Production tools (16).** `swan_query`, `counterparty_resolver`
+- **Production tools (18).** `swan_query`, `counterparty_resolver`
   (4-stage cascade with cache writeback), `gl_account_classifier`
   (rule lookup), `journal_entry_builder` (cash/accrual/match/reversal/
   find_original/mark_reversed), `gl_poster` (single chokepoint for
@@ -67,11 +104,14 @@ wired to the backend via a Vite dev proxy.
   `RealMetaPRD §7.6` asserts), `budget_envelope.decrement`,
   `confidence_gate` (multiplicative with None=0.5),
   `review_queue.enqueue`, `document_extractor.validate_totals`,
-  `external_payload_parser`, plus the four Phase 3 reporting tools:
-  `period_aggregator.{compute_trial_balance,compute_open_entries,summarize_period}`,
+  `external_payload_parser`, the four Phase 3 reporting tools
+  (`period_aggregator.{compute_trial_balance,compute_open_entries,summarize_period}`,
   `vat_calculator.compute_vat_return`,
   `retained_earnings_builder.build_closing_entry`,
-  `report_renderer.render`.
+  `report_renderer.render`), and the three Phase 4.A wiki tools
+  (`wiki_reader` for role-tag lookup, `wiki_search` for BM25 over
+  the FTS5 index, `wiki_writer` for the post-mortem
+  commit/queue chokepoint).
 - **Production agents (5).** `counterparty_classifier`,
   `gl_account_classifier_agent` (chart-of-accounts enum at request
   time), `document_extractor` (Claude vision + `submit_invoice` strict
@@ -97,7 +137,7 @@ wired to the backend via a Vite dev proxy.
   wiki_search:run` exposes BM25 over the FTS5 index when the right tag
   isn't known up front. `wiki/maintenance.py` keeps `log.md` and
   `index.md` updated automatically. The CFO can edit policies via
-  `POST /wiki/pages` / `PUT /wiki/pages/{id}` (auth-shim `x-agnes-author`
+  `POST /wiki/pages` / `PUT /wiki/pages/{id}` (auth-shim `x-fingent-author`
   header).
 - **Production conditions.** `gating.{passes_confidence,needs_review,
   posted}`, `counterparty.unresolved`, `gl.unclassified`,
@@ -110,6 +150,24 @@ wired to the backend via a Vite dev proxy.
   reporting), `vat_return` (8 nodes), `year_end_close` (10 nodes; only
   pipeline that posts new journal entries during a close), plus
   `noop_demo` and `log_and_continue`.
+- **Phase 4.B gamification layer.** `backend/orchestration/gamification.py`
+  is the engine. The `auto_credit_for_decision` hook is called from
+  inside `audit.write_decision`'s `write_tx`, so every
+  `agent_decisions` insert atomically credits 5 coins to the responsible
+  employee in the same commit, idempotent on `agent_decision_id`. Coin
+  balance is computed on read (approved completions + adjustments −
+  pending/approved redemptions). Manager-only writes are gated by
+  `employees.is_manager` resolved from the `x-fingent-author` header.
+  Frontend exposes a full Adoption tab (Today / Leaderboard / Task
+  library / Rewards / Manager queue) plus a live `AdoptionStrip` on
+  the AI-Spend page that polls `/gamification/leaderboard`.
+- **MCP server.** `backend/mcp/` (FastMCP) exposes the agentic surface
+  to MCP clients — pipeline run/inspect, GL queries, approvals, wiki
+  reads. Implemented as httpx ASGI wrappers around the existing
+  FastAPI routers in-process; **no business-logic duplication**, so
+  every MCP tool inherits the same auth, validation, and audit-spine
+  guarantees as the REST surface. `python -m backend.mcp` (stdio) or
+  `python -m backend.mcp --http`. Optional dep: `uv sync --extra mcp`.
 - **API surface.** `/healthz`, `POST /swan/webhook` (constant-time
   `x-swan-secret`, idempotent on `(provider, event_id)`,
   background-dispatched), `POST /external/webhook/{provider}` (Stripe
@@ -126,22 +184,29 @@ wired to the backend via a Vite dev proxy.
   `GET /journal_entries/{id}/trace` (cross-DB merged view),
   `GET /envelopes` (envelope state with rolled-up `used_cents`),
   `GET /employees`, `GET /employees/{id}` (envelope summary + 30-day
-  spend), `GET /period_reports`, `GET /period_reports/{id}`,
+  spend), `GET /accounting_periods`, `GET /period_reports`,
+  `GET /period_reports/{id}`,
   `GET /period_reports/{id}/artifact?format=md` (PDF/CSV → 415 until
   the renderer learns those formats), `POST /period_reports/{id}/approve`,
   `POST /review/{id}/approve`, `GET /dashboard/stream`
   (long-lived SSE; pipeline lifecycle events fan out here so the Today
-  card updates without polling), and the Phase 3 SQL-only reports
+  card updates without polling), the Phase 3 SQL-only reports
   surface: `GET /reports/{trial_balance,balance_sheet,income_statement,
-  cashflow,budget_vs_actuals,vat_return}`, plus the Phase 4.A wiki
-  surface: `GET /wiki/pages`, `GET /wiki/pages/{id}{,/revisions{,/{rev_id}}}`,
-  `POST /wiki/pages`, `PUT /wiki/pages/{id}`. `CORSMiddleware` allows
-  the Vite dev origin (`http://localhost:5173`).
+  cashflow,budget_vs_actuals,vat_return,ai-costs}` (the last drives
+  the AI-Spend page; whitelisted `group_by` keys, parameter-bound SQL),
+  the Phase 4.A wiki surface: `GET /wiki/pages`,
+  `GET /wiki/pages/{id}{,/revisions{,/{rev_id}}}`, `POST /wiki/pages`,
+  `PUT /wiki/pages/{id}` (write surface gated by `x-fingent-author`),
+  and the Phase 4.B gamification surface: `GET/POST /gamification/{tasks,
+  completions, rewards, redemptions, coin_adjustments}`,
+  `GET /gamification/leaderboard`, `GET /gamification/today/{id}`,
+  `GET /gamification/balance/{id}`. `CORSMiddleware` allows the Vite
+  dev origins.
 - **Replay script.** `python -m backend.scripts.replay_swan_seed`
   iterates the seeded `swan_transactions` and POSTs synthetic webhooks
   through `/swan/webhook`, end-to-end populating the ledger for the
   demo. Idempotent (the second run dedups via
-  `external_events.UNIQUE`). Set `AGNES_SWAN_LOCAL_REPLAY=1` to make
+  `external_events.UNIQUE`). Set `FINGENT_SWAN_LOCAL_REPLAY=1` to make
   `swan_query.fetch_transaction` skip the Swan API and read from the
   local seed.
 - **Routing.** `backend/ingress/routing.yaml` maps event types to
@@ -161,108 +226,179 @@ wired to the backend via a Vite dev proxy.
 
 ```
 backend/
-  api/main.py                  # FastAPI app: lifespan + /healthz only
+  api/                         # FastAPI app + 14 routers wired in main.py
+    main.py                    # lifespan, CORSMiddleware, include_router(*)
+    swan_webhook.py            # POST /swan/webhook
+    external_webhook.py        # POST /external/webhook/{provider}
+    documents.py               # /documents (upload, GET row, GET /blob)
+    runs.py                    # /pipelines (catalog/DAG), /runs (list, get, /stream)
+    employees.py               # /employees + /employees/{id}
+    accounting_periods.py      # /accounting_periods
+    period_reports.py          # /period_reports + /artifact + /approve
+    reports.py                 # Phase 3 SQL-only /reports/* (incl. /reports/ai-costs)
+    audit_traces.py            # /journal_entries + /journal_entries/{id}/trace
+    wiki.py                    # Phase 4.A: GET/POST/PUT /wiki/pages, revisions
+    gamification.py            # Phase 4.B: tasks, completions, rewards, leaderboard
+    dashboard.py               # GET /dashboard/stream (SSE; pipeline_* fan-out)
+    demo_webhook.py            # /review/{id}/approve + demo helpers
+  ingress/
+    routing.yaml               # event_type → pipeline mapping
+  mcp/                         # FastMCP server (Phase 4-bonus)
+    __main__.py                # python -m backend.mcp [--http]
+    server.py                  # tools wrap FastAPI routers via httpx ASGI
   orchestration/
-    context.py                 # AgnesContext dataclass
-    yaml_loader.py             # safe_load → Pipeline dataclass
-    dag.py                     # Kahn topological-layer build
-    executor.py                # async layer-by-layer runner
-    registries.py              # tool / agent / runner / condition lookup
-    cache.py                   # cross-run node cache (canonical + sha256)
-    cost.py                    # COST_TABLE_MICRO_USD + micro_usd()
-    prompt_hash.py             # sha256[:16] over (model, system, tools, last user)
-    audit.py                   # propose → checkpoint → commit
-    event_bus.py               # in-process pub/sub + TTL reaper
+    context.py / yaml_loader.py / dag.py / executor.py
+    registries.py / cache.py / cost.py / prompt_hash.py
+    audit.py                   # propose → checkpoint → commit (calls auto-credit)
+    event_bus.py               # in-process pub/sub + dashboard channel
+    gamification.py            # Phase 4.B engine: auto_credit_for_decision,
+                               #   coin_balance, leaderboard, today_summary,
+                               #   is_manager (called from inside write_tx)
     runners/
       base.py                  # AgentResult, TokenUsage, AgentRunner Protocol
-      anthropic_runner.py      # real Anthropic runtime
+      anthropic_runner.py      # AsyncAnthropic singleton, vision support
+      pydantic_ai_runner.py    # raw AsyncOpenAI against api.cerebras.ai
+      cerebras_impl.py         # schema/parse helpers (pure)
       adk_runner.py            # stub
-      pydantic_ai_runner.py    # stub
+    swan/                      # OAuth + GraphQL client (Phase 2.A)
+    tools/                     # 18 production tools — see "What works today"
+    agents/                    # counterparty_classifier, gl_account_classifier_agent,
+                               #   document_extractor, anomaly_flag_agent,
+                               #   wiki_post_mortem_agent (+ noop_agent)
+    wiki/                      # Phase 4.A
+      schema.py                # WikiFrontmatter + parse
+      loader.py                # load_pages_for_tags, resolve_references
+      writer.py                # upsert_page (single chokepoint)
+      maintenance.py           # auto-maintained log.md + index.md
+    conditions/                # gating, counterparty, gl, documents, reporting
+    pipelines/                 # transaction_booked, transaction_released,
+                               #   document_ingested, external_event,
+                               #   period_close, vat_return, year_end_close
+                               #   (each closing pipeline ends with read-wiki +
+                               #   draft-post-mortem + write-post-mortem nodes),
+                               #   noop_demo, log_and_continue
     store/
       bootstrap.py             # open_dbs() → StoreHandles (3 conns + 3 locks)
       writes.py                # write_tx async ctx mgr (BEGIN IMMEDIATE)
       schema/{accounting,orchestration,audit}.sql
       migrations/
-        __init__.py            # MigrationRunner + split_sql_statements
-        accounting/0001_init.py
-        orchestration/0001_init.py
-        audit/0001_init.py
-        audit/0002_seed_employees.py
-    pipelines/noop_demo.yaml   # smoke-test pipeline (3 nodes)
-    tools/noop.py              # smoke-test tool
-    agents/noop_agent.py       # smoke-test agent
-    conditions/gating.py       # passes_confidence, needs_review, posted (stubs)
-  tests/
-    conftest.py                # tmp_path stores + fake_anthropic fixture
-    test_*.py                  # 12 files, 70 cases
+        accounting/0001..0009  # init … periods + VAT seed + retained earnings CoA
+        audit/0001..0005       # init … wiki citations … gamification tables
+        orchestration/0001..0004  # init … wiki_pages … wiki_revisions … FTS5
+  scripts/
+    replay_swan_seed.py        # Phase 3 demo replay CLI
+    enrich_demo_seed.py        # one-shot agent-attribution enrichment
+    seed_adoption_demo.py      # Phase 4.B demo data
+    seed_wiki.py / seed_demo_post_mortem.py
+    backfill_employee_attribution.py / reset_demo_state.py
+  tests/                       # 50+ test files
 
 data/
-  blobs/                       # PDF storage (used Phase E onwards)
+  blobs/                       # PDF storage
   {accounting,orchestration,audit}.db   # created on first boot
 
-frontend/                      # Vite + React 18 + TS + Tailwind v4 + Zustand 5 + Motion
-  vite.config.ts               # proxies /healthz, /swan, /documents, /pipelines,
-                               #   /runs, /journal_entries, /envelopes, /review,
-                               #   /dashboard → :8000
+frontend-lovable/              # PRIMARY — Vite + React 18 + TS + shadcn/ui +
+                               #   Radix + TanStack Query + Zustand 5 + react-router
+  vite.config.ts               # dev :5174, proxies every backend prefix
   src/
-    App.tsx                    # 4-tab layout (Dashboard | Review | Reports | Infra) + global SSE
-    api.ts                     # typed fetch wrappers
-    types/index.ts             # response + DashboardEvent + RunEvent shapes
-    types/reports.ts           # Phase 3 report response shapes
-    hooks/useSSE.ts            # generic EventSource hook (StrictMode-safe)
-    store/{dashboard,runProgress}.ts   # Zustand stores
-    components/                # Ledger, EnvelopeRing(s), UploadZone,
-                               #   RunProgressOverlay, TraceDrawer,
-                               #   ReviewQueue, ReportsTab,
-                               #   ReportTypeSelect, PeriodPicker,
-                               #   ReportTable, InfraTab, Tabs, Skeleton
+    lib/api.ts                 # uses VITE_API_BASE_URL (.env.local)
+    pages/                     # Dashboard, AI Spend, Reports, Adoption, Wiki, …
+    components/adoption/       # AdoptionStrip on AI-Spend, Adoption tab tiles
 
-pyproject.toml                 # python>=3.12; aiosqlite, anthropic, fastapi, …
-pytest.ini                     # asyncio_mode = auto
-.env.example                   # canonical env-var names
+frontend/                      # SECONDARY (kept for reference) — Tailwind v4 stack
+  vite.config.ts               # dev :5173, proxies every backend prefix → :8000
+  src/                         # 4-tab layout: Dashboard | Review | Reports | Infra
+
+Orchestration/
+  PRDs/RealMetaPRD.md          # the contract
+  Plans/phase-*.md             # per-phase plans (Phase 1, 2, 3, 4)
+  pitch/pitch_v2_hg.md         # 3-min Hg Catalyst pitch (current framing)
+  pitch/capabilities.md        # customer-facing capabilities promise
+  research/                    # ANTHROPIC_SDK_STACK_REFERENCE, CEREBRAS_*
+
+pyproject.toml                 # python>=3.12; aiosqlite, anthropic, fastapi,
+                               #   openai>=1.30 (Cerebras), optional [adk] /
+                               #   [pydantic_ai] / [dev] / [mcp] extras
+pytest.ini                     # asyncio_mode = auto, timeout = 15 (thread)
+.env.example                   # canonical env-var names (SWAN_*, STRIPE_*,
+                               #   CEREBRAS_API_KEY, FINGENT_LLM_PROVIDER, …)
 ```
 
 ## Run it
 
 ```bash
-# Install (system Python 3.12 already has aiosqlite/yaml/pydantic/anthropic/
-# fastapi/uvicorn; only pytest needs adding):
-pip install --break-system-packages pytest pytest-asyncio
+# Install dev extras (pulls pytest + pytest-timeout, required by pytest.ini):
+uv sync --extra dev
 
-# Tests:
-python3 -m pytest backend/tests/ -q
+# Tests — single-writer + 15s per-test ceiling are non-negotiable
+# (see CLAUDE.md "How to run tests" before invoking pytest):
+.venv/bin/pytest backend/tests/ -q
 
-# Boot the API (single worker is mandatory — see CLAUDE.md):
-AGNES_DATA_DIR=./data uvicorn backend.api.main:app --workers 1 --port 8000
-curl http://127.0.0.1:8000/healthz   # → {"status":"ok"}
+# Boot the API (single worker is mandatory — see CLAUDE.md).
+# In this dev environment :8000 is held by another local service, so we
+# default to :8001:
+FINGENT_DATA_DIR=./data .venv/bin/uvicorn backend.api.main:app \
+  --workers 1 --host 127.0.0.1 --port 8001
+curl http://127.0.0.1:8001/healthz   # → {"status":"ok"}
 ```
 
 ## Run the frontend
 
-There are now **two** frontends in the tree. `frontend-lovable/` is the
-**primary** one (cloned from
-[agnes-finance-hub](https://github.com/timbtz/agnes-finance-hub) — Vite +
-React 18 + shadcn/ui + Radix + TanStack Query). `frontend/` is kept as
-secondary for reference.
+`frontend-lovable/` is **primary** (Vite + React 18 + shadcn/ui + Radix
++ TanStack Query, cloned from
+[agnes-finance-hub](https://github.com/timbtz/agnes-finance-hub),
+includes the Phase 4.B Adoption tab and AdoptionStrip).
+`frontend/` is kept secondary for reference (Tailwind v4 stack).
 
 ```bash
 # Backend (terminal 1):
-AGNES_DATA_DIR=./data uvicorn backend.api.main:app --workers 1 --port 8000
+FINGENT_DATA_DIR=./data .venv/bin/uvicorn backend.api.main:app \
+  --workers 1 --host 127.0.0.1 --port 8001
 
-# Primary (Lovable) frontend dev server (terminal 2):
+# Primary (Lovable) frontend (terminal 2) — defaults proxy to :8001:
 cd frontend-lovable
 bun install        # first time only (npm install also works)
 bun run dev        # → http://localhost:5174
 
-# Secondary frontend (terminal 2 alt):
+# Secondary frontend (terminal 2 alt) — defaults proxy to :8000:
 cd frontend
 npm install        # first time only
 npm run dev        # → http://localhost:5173
 ```
 
-Both Vite dev servers proxy every backend prefix to `:8000`, so the
-browser sees a single origin (no CORS). The Lovable frontend's
-`src/lib/api.ts` reads `VITE_API_BASE_URL` from `.env.local`; it's set
-to the dev server's own origin so requests come back through the proxy.
-For a production-style smoke test: `bun run build` (or `npm run build`)
-emits a static bundle into `frontend-lovable/dist/`.
+If you start uvicorn on a non-default port, override the proxy target on
+the Vite side: `FINGENT_BACKEND_URL=http://127.0.0.1:<port> bun run dev`.
+Both dev servers proxy every backend prefix, so the browser sees a
+single origin (no CORS). The Lovable frontend's `src/lib/api.ts` reads
+`VITE_API_BASE_URL` from `.env.local`. For a production-style smoke
+test: `bun run build` emits a static bundle into `frontend-lovable/dist/`.
+
+## Demo seed flow
+
+For a believable end-to-end demo (live ledger + agent attribution +
+envelope rings + AI-Spend page + Adoption tab):
+
+```bash
+# Replay seeded swan transactions through /swan/webhook (idempotent):
+FINGENT_SWAN_LOCAL_REPLAY=1 python -m backend.scripts.replay_swan_seed
+
+# One-shot enrichment — links 40 agent_decisions to journal entries,
+# flips 6 entries to review, populates budget_allocations so envelopes
+# burn 12–94%, propagates employee_id onto agent_costs (idempotent):
+python -m backend.scripts.enrich_demo_seed
+
+# Phase 4.B adoption demo data (tasks, completions, redemptions):
+python -m backend.scripts.seed_adoption_demo
+```
+
+## MCP
+
+```bash
+uv sync --extra mcp                # optional dep
+python -m backend.mcp              # stdio transport
+python -m backend.mcp --http       # HTTP transport
+```
+
+Tools wrap the FastAPI routers in-process via httpx ASGI — see
+`backend/mcp/server.py`. They never duplicate router business logic; if
+a route changes, the MCP tool inherits the change automatically.

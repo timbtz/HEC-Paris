@@ -10,7 +10,7 @@
 
 ## Product, in one paragraph
 
-Agnes is a YAML-driven DAG executor over three SQLite databases
+Fingent is a YAML-driven DAG executor over three SQLite databases
 (`accounting.db` / `orchestration.db` / `audit.db`). Every agent call
 writes a `(decision, cost, employee)` triple, so the wedge query
 "how much did Anthropic bill us this month, per employee" is a single
@@ -42,12 +42,12 @@ backend/                         # implementation (see README.md for detail)
                                  #   reports (/reports/* — Phase 3 SQL-only),
                                  #   wiki (GET pages + revisions; POST /wiki/pages,
                                  #   PUT /wiki/pages/{id} — Phase 4.A write surface
-                                 #   gated by `x-agnes-author` header),
+                                 #   gated by `x-fingent-author` header),
                                  #   gamification (Phase 4.B — /gamification/{tasks,
                                  #   completions, rewards, redemptions, leaderboard,
                                  #   today/{id}, balance/{id}, coin_adjustments};
                                  #   manager-only POSTs gated by employees.is_manager
-                                 #   resolved from `x-agnes-author`),
+                                 #   resolved from `x-fingent-author`),
                                  #   CORSMiddleware (allows Vite dev origin :5173)
   ingress/                       # routing.yaml — event_type → pipeline mapping
   orchestration/
@@ -66,7 +66,7 @@ backend/                         # implementation (see README.md for detail)
     agents/                      # 5 production agents (counterparty, GL, document,
                                  #   anomaly_flag, wiki_post_mortem) — counterparty/
                                  #   GL/anomaly route via default_runner()
-                                 #   (env: AGNES_LLM_PROVIDER); all four reasoning
+                                 #   (env: FINGENT_LLM_PROVIDER); all four reasoning
                                  #   agents read the Living Rule Wiki and stamp
                                  #   wiki_references on AgentResult.
     wiki/                        # schema (WikiFrontmatter + parse), loader
@@ -164,7 +164,7 @@ pyproject.toml                   # deps incl. openai>=1.30 (Cerebras runner);
                                  #   optional [adk] / [pydantic_ai] / [dev] extras
 pytest.ini                       # asyncio_mode = auto, timeout = 15
 .env.example                     # canonical env-var names (incl. SWAN_*, STRIPE_*,
-                                 #   CEREBRAS_API_KEY, AGNES_LLM_PROVIDER)
+                                 #   CEREBRAS_API_KEY, FINGENT_LLM_PROVIDER)
 ```
 
 ## Hard rules carried over from RealMetaPRD
@@ -203,11 +203,11 @@ pytest.ini                       # asyncio_mode = auto, timeout = 15
   `wiki/maintenance.py` prevents an upsert of `log.md`/`index.md` from
   triggering more upserts. Maintenance failures are soft-fail (warning
   logged) so a maintenance bug never crashes an actual edit.
-- Setting `AGNES_SWAN_LOCAL_REPLAY=1` makes
+- Setting `FINGENT_SWAN_LOCAL_REPLAY=1` makes
   `tools.swan_query.fetch_transaction` skip the Swan API and read from
   the locally-persisted seed. Used by `backend/scripts/replay_swan_seed.py`
   for the demo; never set in production.
-- `AGNES_LLM_PROVIDER=anthropic|cerebras` (default `anthropic`) selects
+- `FINGENT_LLM_PROVIDER=anthropic|cerebras` (default `anthropic`) selects
   the classifier runtime. `cerebras` requires `CEREBRAS_API_KEY` and
   routes `anomaly_flag_agent`, `gl_account_classifier_agent`, and
   `counterparty_classifier` through `PydanticAiRunner` (raw
@@ -223,13 +223,13 @@ pytest.ini                       # asyncio_mode = auto, timeout = 15
 
 - **Backend** runs on **`127.0.0.1:8001`** in this dev environment —
   port `:8000` is held by another local service (returns a `/login`
-  redirect, not Agnes). Start with:
-  `AGNES_DATA_DIR=./data .venv/bin/uvicorn backend.api.main:app --workers 1 --host 127.0.0.1 --port 8001`
+  redirect, not Fingent). Start with:
+  `FINGENT_DATA_DIR=./data .venv/bin/uvicorn backend.api.main:app --workers 1 --host 127.0.0.1 --port 8001`
 - **Frontend** (Lovable) runs on **`:5174`** with `npm run dev` from
   `frontend-lovable/`. The Vite proxy default in `vite.config.ts`
   already points at `http://127.0.0.1:8001`. If you start uvicorn on a
   different port, override it on the Vite side:
-  `AGNES_BACKEND_URL=http://127.0.0.1:<port> npm run dev`.
+  `FINGENT_BACKEND_URL=http://127.0.0.1:<port> npm run dev`.
 - The secondary `frontend/` (Tailwind v4) on `:5173` is kept for
   reference only; primary work is `frontend-lovable/`.
 - **Demo seeder.** `python -m backend.scripts.enrich_demo_seed` is the

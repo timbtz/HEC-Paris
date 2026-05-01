@@ -6,7 +6,7 @@ the same pipelines that `/swan/webhook` would, and returns enough metadata
 for the UI to show what just fired.
 
 Bypasses the `x-swan-secret` check because it is a server-internal trigger.
-Sets `AGNES_SWAN_LOCAL_REPLAY=1` so `tools.swan_query.fetch_transaction`
+Sets `FINGENT_SWAN_LOCAL_REPLAY=1` so `tools.swan_query.fetch_transaction`
 reads from the local seed instead of calling the Swan API.
 """
 from __future__ import annotations
@@ -214,7 +214,7 @@ async def simulate_swan_event(req: SimulateRequest, request: Request) -> dict[st
         )
 
     # Make sure the pipeline reads from local seed, not Swan API.
-    os.environ.setdefault("AGNES_SWAN_LOCAL_REPLAY", "1")
+    os.environ.setdefault("FINGENT_SWAN_LOCAL_REPLAY", "1")
 
     event_type = _TX_TYPE_TO_EVENT_TYPE.get(row["type"], "Transaction.Booked")
     envelope = {

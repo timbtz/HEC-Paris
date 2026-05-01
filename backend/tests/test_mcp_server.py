@@ -48,8 +48,8 @@ async def test_mcp_lists_tools_and_calls_pipelines() -> None:
         # Resources + prompts wired.
         resources = await client.list_resource_templates()
         uris = {r.uriTemplate for r in resources}
-        assert "agnes://run/{run_id}" in uris
-        assert "agnes://entry/{entry_id}/trace" in uris
+        assert "fingent://run/{run_id}" in uris
+        assert "fingent://entry/{entry_id}/trace" in uris
 
         prompts = await client.list_prompts()
         prompt_names = {p.name for p in prompts}

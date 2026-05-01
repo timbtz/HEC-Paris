@@ -8,15 +8,15 @@ from __future__ import annotations
 
 import pytest
 
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 from backend.orchestration.tools import external_payload_parser
 
 
 pytestmark = pytest.mark.asyncio
 
 
-def _ctx(trigger_source: str, trigger_payload: dict) -> AgnesContext:
-    return AgnesContext(
+def _ctx(trigger_source: str, trigger_payload: dict) -> FingentContext:
+    return FingentContext(
         run_id=1,
         pipeline_name="external_event",
         trigger_source=trigger_source,

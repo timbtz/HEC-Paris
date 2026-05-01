@@ -4,14 +4,14 @@ Source: plan §STEP-BY-STEP Task 16.
 """
 from __future__ import annotations
 
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 from backend.orchestration.tools.wiki_search import fetch
 from backend.orchestration.wiki.schema import WikiFrontmatter
 from backend.orchestration.wiki.writer import upsert_page
 
 
-def _ctx(store) -> AgnesContext:
-    return AgnesContext(
+def _ctx(store) -> FingentContext:
+    return FingentContext(
         run_id=1,
         pipeline_name="test",
         trigger_source="manual",

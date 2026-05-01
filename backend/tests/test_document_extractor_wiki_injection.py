@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 from backend.orchestration.agents.document_extractor import run
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 from backend.orchestration.store.writes import write_tx
 from backend.orchestration.wiki.schema import WikiFrontmatter
 from backend.orchestration.wiki.writer import upsert_page
@@ -35,11 +35,11 @@ async def _seed_doc(store, tmp_path: Path) -> int:
     return int(document_id)
 
 
-def _ctx(store, *, document_id: int, document_kind: str | None = None) -> AgnesContext:
+def _ctx(store, *, document_id: int, document_kind: str | None = None) -> FingentContext:
     payload: dict = {"document_id": document_id}
     if document_kind is not None:
         payload["document_kind"] = document_kind
-    return AgnesContext(
+    return FingentContext(
         run_id=31,
         pipeline_name="document_ingested",
         trigger_source="manual",

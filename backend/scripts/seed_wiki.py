@@ -38,12 +38,12 @@ def _default_wiki_dir() -> Path:
 
 
 def _default_data_dir() -> Path:
-    """Match the canonical Agnes data dir.
+    """Match the canonical Fingent data dir.
 
-    Honors `AGNES_DATA_DIR` per `.env.example` so the seeder writes into
+    Honors `FINGENT_DATA_DIR` per `.env.example` so the seeder writes into
     the same orchestration.db the API server opens.
     """
-    return Path(os.environ.get("AGNES_DATA_DIR", "./data")).resolve()
+    return Path(os.environ.get("FINGENT_DATA_DIR", "./data")).resolve()
 
 
 def _title_from_body(body_md: str, fallback: str) -> str:
@@ -106,7 +106,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--data-dir",
         type=Path,
         default=_default_data_dir(),
-        help="Agnes data dir (default: AGNES_DATA_DIR or ./data).",
+        help="Fingent data dir (default: FINGENT_DATA_DIR or ./data).",
     )
     p.add_argument(
         "--author",

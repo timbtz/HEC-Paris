@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 
 
 _SEARCH_SQL = (
@@ -51,7 +51,7 @@ _SEARCH_SQL = (
 
 
 async def fetch(
-    ctx: AgnesContext,
+    ctx: FingentContext,
     *,
     query: str,
     limit: int = 10,
@@ -99,7 +99,7 @@ async def fetch(
     return {"hits": hits}
 
 
-async def run(ctx: AgnesContext) -> dict[str, Any]:
+async def run(ctx: FingentContext) -> dict[str, Any]:
     """Pipeline-node entry point.
 
     Reads `query` from `ctx.trigger_payload["wiki_query"]` or

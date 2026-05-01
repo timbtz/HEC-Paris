@@ -7,15 +7,15 @@ from typing import Any
 
 import pytest
 
-from backend.orchestration.context import AgnesContext
+from backend.orchestration.context import FingentContext
 from backend.orchestration.runners.adk_runner import AdkRunner
 from backend.orchestration.runners.anthropic_runner import AnthropicRunner
 from backend.orchestration.runners.base import AgentResult
 from backend.orchestration.runners.pydantic_ai_runner import PydanticAiRunner
 
 
-def _ctx(store) -> AgnesContext:
-    return AgnesContext(
+def _ctx(store) -> FingentContext:
+    return FingentContext(
         run_id=1, pipeline_name="t", trigger_source="manual",
         trigger_payload={}, node_outputs={}, store=store,
     )

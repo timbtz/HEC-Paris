@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search, Filter, ArrowUpRight, Receipt, X } from "lucide-react";
 import { useDashboard } from "@/store/dashboard";
-import { useTraceDrawer } from "@/components/agnes/TraceDrawerContext";
-import { Cents, EmptyState, MockedChip, Money, RelTime, SkeletonRow, StatusBadge } from "@/components/agnes/primitives";
+import { useTraceDrawer } from "@/components/fingent/TraceDrawerContext";
+import { Cents, EmptyState, MockedChip, Money, RelTime, SkeletonRow, StatusBadge } from "@/components/fingent/primitives";
 import { fetchEmployees, fetchJournalEntries } from "@/lib/endpoints";
 import type { Employee, EntryStatus, JournalEntrySummary } from "@/lib/types";
 

@@ -12,8 +12,8 @@ import {
   txByEmployee,
 } from "@/lib/dataset";
 import { EMPLOYEES } from "@/lib/mocks";
-import { useTraceDrawer } from "@/components/agnes/TraceDrawerContext";
-import { ConfidenceBar, EmptyState, Money, RelTime, StatusBadge } from "@/components/agnes/primitives";
+import { useTraceDrawer } from "@/components/fingent/TraceDrawerContext";
+import { ConfidenceBar, EmptyState, Money, RelTime, StatusBadge } from "@/components/fingent/primitives";
 import { cn } from "@/lib/utils";
 
 const CURRENT_USER_ID = 1; // Élise

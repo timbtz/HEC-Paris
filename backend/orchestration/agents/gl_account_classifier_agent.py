@@ -21,14 +21,14 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from ..context import AgnesContext
+from ..context import FingentContext
 from ..registries import default_cerebras_model, default_runner, get_runner
 from ..runners.base import AgentResult
 from ..store.writes import write_tx
 from ..tools import wiki_reader as wiki_reader_tool
 
 
-async def _load_chart_codes(ctx: AgnesContext) -> list[str]:
+async def _load_chart_codes(ctx: FingentContext) -> list[str]:
     cur = await ctx.store.accounting.execute(
         "SELECT code FROM chart_of_accounts ORDER BY code"
     )
@@ -47,7 +47,7 @@ async def _load_chart_codes(ctx: AgnesContext) -> list[str]:
     return codes
 
 
-def _build_summary(ctx: AgnesContext) -> str:
+def _build_summary(ctx: FingentContext) -> str:
     """Compact JSON summary of what we're trying to classify.
 
     The agent gets the full counterparty + transaction-or-extraction context
@@ -66,7 +66,7 @@ def _build_summary(ctx: AgnesContext) -> str:
 
 
 async def _writeback_rule(
-    ctx: AgnesContext,
+    ctx: FingentContext,
     *,
     cp_legal_name: str,
     gl_account: str,
@@ -91,7 +91,7 @@ async def _writeback_rule(
         )
 
 
-async def run(ctx: AgnesContext) -> AgentResult:
+async def run(ctx: FingentContext) -> AgentResult:
     codes = await _load_chart_codes(ctx)
 
     tool = {
