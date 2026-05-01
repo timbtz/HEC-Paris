@@ -1,5 +1,7 @@
 # Fingent
 
+![Fingent](docs/fingent1.png)
+
 YAML-driven DAG executor over a three-database SQLite backbone, with an
 audit/cost spine that records every agent decision — and every cent of
 provider spend — against an individual employee. The wedge: when an
