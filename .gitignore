@@ -1,0 +1,41 @@
+# Internal dev / planning docs — not for the public repo
+Orchestration/
+Dev orchestration/
+architecure.md
+pennylane_vs_us.md
+pitch_research.md
+projectbriefing.md
+spherecast_extraction_prompt.md
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+
+# Swan probe artifacts (huge JSON dumps; keep gz in git, not raw)
+**/_probes/swan_schema_full.json
+**/_probes/full_introspection.json
+**/_probes/schema_overview.json
+
+# Python build / venv / caches
+.venv/
+*.egg-info/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Runtime DB + blob storage
+data/
+
+# Node / Vite
+node_modules/
+dist/
+*.local
+
+# Ad-hoc local testing artifacts
+testing/

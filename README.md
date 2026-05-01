@@ -4,8 +4,7 @@ YAML-driven DAG executor over a three-database SQLite backbone, with an
 audit/cost spine that records every agent decision — and every cent of
 provider spend — against an individual employee. The wedge: when an
 Anthropic invoice lands, you can answer **"who ordered which workflow"**
-in a single SQL `GROUP BY`. See `Orchestration/pitch/pitch_v2_hg.md`
-for the customer-facing framing.
+in a single SQL `GROUP BY`.
 
 **Status.** All four phases live:
 - **Phase 1** — metalayer foundation (three SQLite DBs with single-writer
@@ -219,8 +218,7 @@ proxy every backend prefix to the FastAPI dev server.
   every tool / agent / condition, every pipeline end-to-end, runs API,
   trace drilldown, dashboard SSE generator, and the per-employee wedge
   SQL. **All pytest invocations must use `--workers 1` semantics and
-  the 15s `timeout` ceiling configured in `pytest.ini`** — see
-  `CLAUDE.md` for the full operating procedure.
+  the 15s `timeout` ceiling configured in `pytest.ini`.**
 
 ## Project structure
 
@@ -309,12 +307,8 @@ frontend/                      # SECONDARY (kept for reference) — Tailwind v4 
   vite.config.ts               # dev :5173, proxies every backend prefix → :8000
   src/                         # 4-tab layout: Dashboard | Review | Reports | Infra
 
-Orchestration/
-  PRDs/RealMetaPRD.md          # the contract
-  Plans/phase-*.md             # per-phase plans (Phase 1, 2, 3, 4)
-  pitch/pitch_v2_hg.md         # 3-min Hg Catalyst pitch (current framing)
-  pitch/capabilities.md        # customer-facing capabilities promise
-  research/                    # ANTHROPIC_SDK_STACK_REFERENCE, CEREBRAS_*
+wiki/                          # Seed markdown corpus loaded into orchestration.db
+                               #   on first boot (policies, post-mortem templates).
 
 pyproject.toml                 # python>=3.12; aiosqlite, anthropic, fastapi,
                                #   openai>=1.30 (Cerebras), optional [adk] /
@@ -330,11 +324,10 @@ pytest.ini                     # asyncio_mode = auto, timeout = 15 (thread)
 # Install dev extras (pulls pytest + pytest-timeout, required by pytest.ini):
 uv sync --extra dev
 
-# Tests — single-writer + 15s per-test ceiling are non-negotiable
-# (see CLAUDE.md "How to run tests" before invoking pytest):
+# Tests — single-writer + 15s per-test ceiling are non-negotiable:
 .venv/bin/pytest backend/tests/ -q
 
-# Boot the API (single worker is mandatory — see CLAUDE.md).
+# Boot the API (single worker is mandatory).
 # In this dev environment :8000 is held by another local service, so we
 # default to :8001:
 FINGENT_DATA_DIR=./data .venv/bin/uvicorn backend.api.main:app \
